@@ -77,6 +77,7 @@ input[type=text],input[type=number],textarea,select{
 textarea{width:100%;resize:vertical}
 input:focus,textarea:focus,select:focus{outline:2px solid var(--brand);outline-offset:0;border-color:transparent}
 .mono, input.mono, textarea.mono{font-family:var(--mono)}
+.field>label .fh{font-weight:400;color:var(--muted);letter-spacing:0}
 
 /* buttons */
 .btn{border:1px solid var(--line2);background:var(--panel);color:var(--ink);border-radius:9px;
@@ -280,20 +281,23 @@ table.ui tr:hover td{background:var(--panel2)}
 
     <div class="card">
       <h2>小纸条 / 邮件文案</h2>
-      <p class="hint">生成查分小纸条时用到，占位符会自动替换成每个学生的内容。</p>
-      <div class="field"><label for="emIntro">开头（Dear 姓名, 之后的一句）</label>
-        <textarea id="emIntro" rows="2"></textarea></div>
+      <p class="hint">小纸条从上到下的结构是：<b>Dear 学生名，→ 开头感谢语 → 成绩表格 →（奖线表）→ 逐题明细 → 资料说明行 + 链接 → 补充说明 → 落款</b>。下面每一栏留空就不会出现在小纸条里；填完点「预览小纸条」直接看效果（会自动保存）。</p>
+      <div class="field"><label for="emIntro">开头感谢语 <span class="fh">— 显示在 “Dear 学生名,” 的下一行；写 {exam} 会自动替换成上面的考试名称</span></label>
+        <textarea id="emIntro" rows="2" placeholder="例：Thank you for your participation in 2026 AMC 10 Mock Exam (05/17&19) at Think Academy."></textarea></div>
       <div class="row" style="margin-top:10px">
-        <div class="field" style="flex:1;min-width:240px"><label for="emBookletLine">资料说明行</label>
-          <input type="text" id="emBookletLine"></div>
-        <div class="field" style="flex:1;min-width:240px"><label for="emBookletLink">资料链接</label>
-          <input type="text" id="emBookletLink" class="mono"></div>
+        <div class="field" style="flex:1;min-width:240px"><label for="emBookletLine">资料说明行 <span class="fh">— 一句话说清链接里是什么，显示在逐题明细下面</span></label>
+          <input type="text" id="emBookletLine" placeholder="例：Exam Booklet (Student Version and Answer)"></div>
+        <div class="field" style="flex:1;min-width:240px"><label for="emBookletLink">资料链接 <span class="fh">— Google Drive 等分享链接，显示在说明行下一行</span></label>
+          <input type="text" id="emBookletLink" class="mono" placeholder="例：https://drive.google.com/drive/folders/xxxx"></div>
       </div>
-      <div class="field" style="margin-top:10px"><label for="emExtra">补充说明（讲评课信息等）</label>
-        <textarea id="emExtra" rows="2"></textarea></div>
-      <div class="field" style="margin-top:10px"><label for="emSign">落款</label>
-        <textarea id="emSign" rows="2"></textarea></div>
-      <button class="btn small" id="resetCfg" style="margin-top:12px">恢复默认设置</button>
+      <div class="field" style="margin-top:10px"><label for="emExtra">补充说明 <span class="fh">— 讲评课时间/老师/回放等安排，显示在资料链接后面</span></label>
+        <textarea id="emExtra" rows="2" placeholder="例：A detailed explanation class covering the last 10 problems will be held this Friday (May 22) from 5-7 PM, taught by Teacher Jack Liu. A playback will be available."></textarea></div>
+      <div class="field" style="margin-top:10px"><label for="emSign">落款 <span class="fh">— 小纸条最后的署名，可以换行</span></label>
+        <textarea id="emSign" rows="2" placeholder="例：Thank you,（换行）Think Academy Cupertino AMC"></textarea></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="previewSlip">👀 预览小纸条</button>
+        <button class="btn small" id="resetCfg">恢复默认设置</button>
+      </div>
     </div>
   </section>
 
@@ -380,6 +384,15 @@ table.ui tr:hover td{background:var(--panel2)}
 
   <p class="footer">所有数据都只存在<b>这台电脑的这个浏览器</b>里（自动保存），不会上传到任何服务器；重要考试建议定期「导出档案」备份。<br>
   判分规则、奖线、文案都在「考试设置」里；不同考试建多个档案随时切换（题数由答案长度决定）。</p>
+</div>
+
+<div id="previewModal" class="modalwrap" hidden>
+  <div class="modalcard" style="width:min(780px,94vw);max-height:88vh;display:flex;flex-direction:column">
+    <h3 style="margin-bottom:4px">小纸条预览</h3>
+    <p class="hint" id="previewNote" style="margin:0 0 10px"></p>
+    <div id="previewBody" style="overflow:auto;border:1px solid var(--line);border-radius:8px;padding:18px;background:#fff;color:#111"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px"><button class="btn small" id="previewClose">关闭</button></div>
+  </div>
 </div>
 
 <div id="nameModal" class="modalwrap" hidden>
@@ -508,7 +521,7 @@ const DEFAULT_CFG = {
     {name:"Distinguished Honor Roll", mode:"auto", pct:1, manual:""},
     {name:"Distinction", mode:"auto", pct:10, manual:""},
   ],
-  emIntro:"Thank you for your participation in the Mock Exam at Think Academy.",
+  emIntro:"Thank you for your participation in {exam} at Think Academy.",
   emBookletLine:"Exam Booklet (Student Version and Answer)",
   emBookletLink:"",
   emExtra:"",
@@ -1023,8 +1036,9 @@ function buildSignin(sess){
   </div>`).join("");
 }
 /* slip html (inline styles so it survives email paste) */
-function slipHtml(s){
-  const P=state.post, key=P.key;
+function slipHtml(s, P){
+  const key=P.key;
+  const intro=(cfg.emIntro||"").replaceAll("{exam}", cfg.examName||"");
   const td='border:1px solid #888;padding:4px 9px;font-size:13px;';
   const tdc=td+'text-align:center;';
   const hd=td+'background:#eee;font-weight:bold;text-align:center;';
@@ -1040,21 +1054,21 @@ function slipHtml(s){
     P.cutoffs.map(c=>`<tr><td style="${td}">${esc(c.name)}</td><td style="${tdc}">${fmtNum(c.value)}</td></tr>`).join("")+`</table>` : "";
   return `<div class="p-slip" style="font-family:Arial,'PingFang SC',sans-serif">
   <p>Dear ${esc(s.name)},</p>
-  <p>${esc(cfg.emIntro)}</p>
+  <p>${esc(intro)}</p>
   <p>Here are the results for you:</p>
   <table style="border-collapse:collapse"><tr><td colspan="4" style="${hd}">Score</td></tr>
-    <tr><td style="${td}">Name:</td><td style="${tdc}">${esc(s.name)}</td><td style="${td}">Average:</td><td style="${tdc}">${state.post.stats.avg.toFixed(2)}</td></tr>
+    <tr><td style="${td}">Name:</td><td style="${tdc}">${esc(s.name)}</td><td style="${td}">Average:</td><td style="${tdc}">${(+P.stats.avg).toFixed(2)}</td></tr>
     <tr><td style="${td}">Student ID:</td><td style="${tdc}">${esc(s.id)}</td><td style="${td}">Median:</td><td style="${tdc}">${fmtNum(P.stats.median)}</td></tr>
     <tr><td style="${td}">Score:</td><td style="${tdc}"><b>${scoreTxt}</b></td><td style="${td}">Highest score:</td><td style="${tdc}">${fmtNum(P.stats.max)}</td></tr>
     <tr><td style="${td}"></td><td style="${td}"></td><td style="${td}">Total number of participants:</td><td style="${tdc}">${P.stats.count}</td></tr></table>
   ${cutsTable}
   <table style="border-collapse:collapse;margin-top:8px"><tr><td style="${hd}">Question</td><td style="${hd}">Answer</td><td style="${hd}">Student's Choice</td><td style="${hd}">Total Points</td><td style="${hd}">Points Earned</td></tr>${detail}</table>
-  ${cfg.emBookletLine?`<p>${esc(cfg.emBookletLine)}<br><a href="${esc(cfg.emBookletLink)}">${esc(cfg.emBookletLink)}</a></p>`:""}
+  ${(cfg.emBookletLine||cfg.emBookletLink)?`<p>${esc(cfg.emBookletLine)}${cfg.emBookletLink?`<br><a href="${esc(cfg.emBookletLink)}">${esc(cfg.emBookletLink)}</a>`:""}</p>`:""}
   ${cfg.emExtra?`<p>${esc(cfg.emExtra)}</p>`:""}
   <p>${esc(cfg.emSign).replace(/\n/g,"<br>")}</p></div>`;
 }
 function buildAllSlips(){
-  return [...state.post.scored, ...state.post.absent].map(slipHtml).join("");
+  return [...state.post.scored, ...state.post.absent].map(s=>slipHtml(s, state.post)).join("");
 }
 const STANDALONE_CSS = `
   body{font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif;color:#111;margin:24px}
@@ -1085,7 +1099,7 @@ function printHtml(html){
   setTimeout(()=>{ try{ window.print(); }catch(e){ toast("无法调起打印，请用「下载打印版」按钮"); } }, 60);
 }
 async function copySlip(s){
-  const html=slipHtml(s);
+  const html=slipHtml(s, state.post);
   const text=`Dear ${s.name},\n${cfg.emIntro}\nScore: ${s.absent?"缺考":fmtNum(s.score)}\n(请粘贴到支持富文本的邮件正文)`;
   try{
     await navigator.clipboard.write([new ClipboardItem({
@@ -1259,6 +1273,37 @@ function askName(title, placeholder){
     inp.onkeydown=e=>{ if(e.key==="Enter") done(inp.value); if(e.key==="Escape") done(null); };
   });
 }
+function demoPost(){
+  const key=keyLetters()||"EAEDB";
+  const choices=[...key].map((k,i)=> i%5===3? "" : (i%7===2? "ABCDE"[("ABCDE".indexOf(k)+1)%5] : k));
+  const r=scoreChoices(choices, key);
+  const full=key.length*(+cfg.ptC||6);
+  const cutoffs=cfg.cutoffs
+    .filter(c=>String(c.name||"").trim() && !(c.mode==="manual" && !(+c.manual)))
+    .map(c=>({name:c.name, value: c.mode==="manual"? +c.manual : Math.round(full*0.8*2)/2}));
+  return {student:{name:"Alex Wang", id:"1234567", absent:false, score:r.total, per:r.per,
+                   choices, nc:r.nc, nb:r.nb, nw:r.nw},
+          P:{key, stats:{avg:+(full*0.55).toFixed(2), median:Math.round(full*0.5*2)/2, max:full, count:120}, cutoffs}};
+}
+$("#previewSlip").addEventListener("click", ()=>{
+  clearTimeout(saveTimer); saveNow();
+  let html, note;
+  if(state.post.ready && state.post.scored.length){
+    const stu=state.post.scored[0];
+    html=slipHtml(stu, state.post);
+    note="用当前考试的真实成绩预览（第一位学生："+stu.name+"）。改文案后重新点预览即可刷新。";
+  }else{
+    const d=demoPost();
+    html=slipHtml(d.student, d.P);
+    note="还没有扫卡成绩，分数为演示数字；开头、资料、补充说明、落款就是实际发出去的文案效果。";
+  }
+  $("#previewBody").innerHTML=html;
+  $("#previewNote").textContent=note;
+  $("#previewModal").hidden=false;
+});
+$("#previewClose").addEventListener("click",()=>{ $("#previewModal").hidden=true; });
+$("#previewModal").addEventListener("click",e=>{ if(e.target.id==="previewModal") $("#previewModal").hidden=true; });
+
 $("#examNew").addEventListener("click", async ()=>{
   const today=new Date(); const defName="新考试 "+(today.getMonth()+1)+"/"+today.getDate();
   const typed=await askName("新考试的名称（直接输入，回车确认）", "例：August 2026 AMC 10 Mock");

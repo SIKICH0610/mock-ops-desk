@@ -212,9 +212,10 @@ table.ui tr:hover td{background:var(--panel2)}
 
   <div class="card" style="padding:14px 18px">
     <div class="row" style="align-items:center;gap:10px">
-      <span style="font-weight:700;white-space:nowrap">📁 考试档案</span>
+      <span style="font-weight:700;white-space:nowrap">考试档案</span>
       <select id="examPicker" style="min-width:200px;flex:1;max-width:340px"></select>
       <button class="btn small" id="examNew">＋ 新建考试</button>
+      <button class="btn small" id="examRename">重命名</button>
       <button class="btn small" id="examExport">导出档案</button>
       <button class="btn small" id="examImport">导入档案</button>
       <button class="btn small" id="examDelete">删除</button>
@@ -295,7 +296,7 @@ table.ui tr:hover td{background:var(--panel2)}
       <div class="field" style="margin-top:10px"><label for="emSign">落款 <span class="fh">— 小纸条最后的署名，可以换行</span></label>
         <textarea id="emSign" rows="2" placeholder="例：Thank you,（换行）Think Academy Cupertino AMC"></textarea></div>
       <div class="row" style="margin-top:14px">
-        <button class="btn primary" id="previewSlip">👀 预览小纸条</button>
+        <button class="btn primary" id="previewSlip">预览小纸条</button>
         <button class="btn small" id="resetCfg">恢复默认设置</button>
       </div>
     </div>
@@ -370,7 +371,7 @@ table.ui tr:hover td{background:var(--panel2)}
         <h2>③ 查分小纸条</h2>
         <p class="hint">点「复制」得到带表格的富文本，直接粘贴进 Gmail / Outlook 正文；也可以整套打印。</p>
         <div class="row">
-          <button class="btn primary" id="printSlips">🖨 打印全部小纸条</button>
+          <button class="btn primary" id="printSlips">打印全部小纸条</button>
           <button class="btn" id="dlSlipsHtml">下载打印版（HTML）</button>
         </div>
         <div class="searchbar">
@@ -953,8 +954,8 @@ function renderSessions(){
     `</tbody></table>`;
   area.appendChild(tbl);
   const btns=document.createElement("div"); btns.className="row"; btns.style.marginTop="16px";
-  btns.innerHTML=`<button class="btn primary" id="printStk">🖨 打印座位贴</button>
-    <button class="btn primary" id="printSgn">🖨 打印签到表</button>
+  btns.innerHTML=`<button class="btn primary" id="printStk">打印座位贴</button>
+    <button class="btn primary" id="printSgn">打印签到表</button>
     <button class="btn" id="dlRoomX">下载 考场安排.xlsx</button>
     <button class="btn" id="dlPreHtml">下载打印版（HTML）</button>`;
   area.appendChild(btns);
@@ -1259,12 +1260,13 @@ async function loadExam(id){
 $("#examPicker").addEventListener("change", async e=>{
   clearTimeout(saveTimer); await saveNow(); await loadExam(e.target.value);
 });
-function askName(title, placeholder){
+function askName(title, placeholder, initial, okLabel){
   return new Promise(res=>{
     const wrap=$("#nameModal"), inp=$("#nameModalInput");
     $("#nameModalTitle").textContent=title;
-    inp.value=""; inp.placeholder=placeholder||"";
-    wrap.hidden=false; setTimeout(()=>inp.focus(), 30);
+    $("#nameModalOk").textContent=okLabel||"确定";
+    inp.value=initial||""; inp.placeholder=placeholder||"";
+    wrap.hidden=false; setTimeout(()=>{inp.focus(); inp.select();}, 30);
     function done(v){ wrap.hidden=true;
       $("#nameModalOk").onclick=$("#nameModalCancel").onclick=wrap.onclick=inp.onkeydown=null; res(v); }
     $("#nameModalOk").onclick=()=>done(inp.value);
@@ -1306,12 +1308,19 @@ $("#previewModal").addEventListener("click",e=>{ if(e.target.id==="previewModal"
 
 $("#examNew").addEventListener("click", async ()=>{
   const today=new Date(); const defName="新考试 "+(today.getMonth()+1)+"/"+today.getDate();
-  const typed=await askName("新考试的名称（直接输入，回车确认）", "例：August 2026 AMC 10 Mock");
+  const typed=await askName("新考试的名称（直接输入，回车确认）", "例：August 2026 AMC 10 Mock", "", "创建");
   if(typed===null) return;
   clearTimeout(saveTimer); await saveNow();
   const nm=String(typed).trim()||defName;
   const rec=newExamRecord(nm); await examStore.put(rec); await loadExam(rec.id);
   $$(".tabs button")[0].click(); toast("已创建「"+nm+"」");
+});
+$("#examRename").addEventListener("click", async ()=>{
+  const typed=await askName("修改考试名称", "", cfg.examName||"", "保存");
+  if(typed===null) return;
+  const nm=String(typed).trim(); if(!nm){ toast("名称不能为空"); return; }
+  cfg.examName=nm; refreshSetupUI(); renderArchiveBar(); scheduleSave();
+  toast("已改名为「"+nm+"」");
 });
 $("#examDelete").addEventListener("click", async ()=>{
   if(examListCache.length<=1){ toast("至少保留一个考试"); return; }

@@ -201,6 +201,20 @@ table.ui tr:hover td{background:var(--panel2)}
     <div class="privacy"><span class="dot"></span>数据只在本浏览器处理，不上传</div>
   </header>
 
+  <div class="card" style="padding:14px 18px">
+    <div class="row" style="align-items:center;gap:10px">
+      <span style="font-weight:700;white-space:nowrap">📁 考试档案</span>
+      <select id="examPicker" style="min-width:200px;flex:1;max-width:340px"></select>
+      <button class="btn small" id="examNew">＋ 新建考试</button>
+      <button class="btn small" id="examExport">导出档案</button>
+      <button class="btn small" id="examImport">导入档案</button>
+      <button class="btn small" id="examDelete">删除</button>
+      <span class="chip" id="saveState">自动保存</span>
+    </div>
+    <p class="hint" style="margin:8px 0 0">每个考试的报名表、扫卡结果、设置都自动存在<b>本浏览器</b>里 —— 考前考后隔多久都能随时切回来接着用。换电脑或交接给同事：「导出档案」生成一个文件，对方「导入档案」即可。</p>
+    <input type="file" id="fileArchive" accept=".json,application/json" style="display:none">
+  </div>
+
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-tab="setup"><span class="n">1</span>考试设置</button>
     <button role="tab" aria-selected="false" data-tab="pre"><span class="n">2</span>考前 · 座位与签到</button>
@@ -356,8 +370,8 @@ table.ui tr:hover td{background:var(--panel2)}
     </div>
   </section>
 
-  <p class="footer">所有文件都在你自己的浏览器里解析和计算，关掉页面就没了，不会上传到任何服务器。<br>
-  判分规则、奖线、文案都在「考试设置」里，可套用到其它考试（题数由答案长度决定）。</p>
+  <p class="footer">所有数据都只存在<b>这台电脑的这个浏览器</b>里（自动保存），不会上传到任何服务器；重要考试建议定期「导出档案」备份。<br>
+  判分规则、奖线、文案都在「考试设置」里；不同考试建多个档案随时切换（题数由答案长度决定）。</p>
 </div>
 
 <div id="printRoot"></div>
@@ -422,9 +436,48 @@ async function saveFile(filename, data){
   }catch(e){ toast("保存失败："+e.message); }
 }
 
-const LS_KEY="mockOpsCfg_v1";
-function lsGet(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"null"); }catch(e){ return null; } }
-function lsSet(v){ try{ localStorage.setItem(LS_KEY, JSON.stringify(v)); }catch(e){} }
+const LS_KEY="mockOpsCfg_v1";          // 旧版全局配置（仅迁移用）
+const LS_ACTIVE="mockOpsActiveExam";
+function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k||LS_KEY)||"null"); }catch(e){ return null; } }
+function lsSet(v,k){ try{ localStorage.setItem(k||LS_KEY, JSON.stringify(v)); }catch(e){} }
+
+/* ============================================================ 考试档案（IndexedDB） */
+let _idb=null;
+function idbOpen(){ return new Promise((res,rej)=>{ if(_idb) return res(_idb);
+  const rq=indexedDB.open("mockOpsDesk",1);
+  rq.onupgradeneeded=()=>rq.result.createObjectStore("exams",{keyPath:"id"});
+  rq.onsuccess=()=>{_idb=rq.result;res(_idb);}; rq.onerror=()=>rej(rq.error); }); }
+async function idbReq(mode, run){ const db=await idbOpen();
+  return new Promise((res,rej)=>{ const st=db.transaction("exams",mode).objectStore("exams");
+    const rq=run(st); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+const examStore={
+  all(){ return idbReq("readonly",st=>st.getAll()); },
+  get(id){ return idbReq("readonly",st=>st.get(id)); },
+  put(rec){ return idbReq("readwrite",st=>st.put(rec)); },
+  del(id){ return idbReq("readwrite",st=>st.delete(id)); },
+};
+let activeExamId=null, saveTimer=null, lastSavedAt=null, storageOk=true;
+function newExamRecord(name, cfgObj){
+  const c = cfgObj||JSON.parse(JSON.stringify(DEFAULT_CFG));
+  if(name) c.examName = name;
+  return {id:"ex_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+    name:name||c.examName||"新考试", createdAt:Date.now(), updatedAt:Date.now(),
+    cfg:c, rosterFiles:[], mappingOverride:{}, scansRaw:null, timesOverride:{}};
+}
+function currentRecord(){
+  return {id:activeExamId, name:cfg.examName||"未命名考试",
+    createdAt:state.recCreatedAt||Date.now(), updatedAt:Date.now(),
+    cfg:JSON.parse(JSON.stringify(cfg)),
+    rosterFiles:state.rosterFiles.map(f=>({name:f.name, aoa:[f.header, ...f.rows]})),
+    mappingOverride:state.mappingOverride, scansRaw:state.scansRaw,
+    timesOverride:state.timesOverride};
+}
+function scheduleSave(){ if(!activeExamId||!storageOk) return;
+  clearTimeout(saveTimer); saveTimer=setTimeout(saveNow, 700); }
+async function saveNow(){ if(!activeExamId||!storageOk) return;
+  try{ await examStore.put(currentRecord()); lastSavedAt=new Date(); renderArchiveBar(); }
+  catch(e){ storageOk=false; renderArchiveBar(); }
+}
 
 /* ============================================================ config */
 const DEFAULT_CFG = {
@@ -444,23 +497,38 @@ const DEFAULT_CFG = {
   defCap:20,
   rooms:[{name:"101",cap:""},{name:"103",cap:""},{name:"104",cap:""},{name:"105",cap:""},{name:"106",cap:""},{name:"204",cap:""}],
 };
-let cfg = Object.assign({}, DEFAULT_CFG, lsGet()||{});
-if(!Array.isArray(cfg.cutoffs)||!cfg.cutoffs.length) cfg.cutoffs = JSON.parse(JSON.stringify(DEFAULT_CFG.cutoffs));
-if(!Array.isArray(cfg.rooms)||!cfg.rooms.length) cfg.rooms = JSON.parse(JSON.stringify(DEFAULT_CFG.rooms));
+let cfg = JSON.parse(JSON.stringify(DEFAULT_CFG));   // 实际内容由当前考试档案决定
+function normalizeCfg(c){
+  c = Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)), c||{});
+  if(!Array.isArray(c.cutoffs)||!c.cutoffs.length) c.cutoffs = JSON.parse(JSON.stringify(DEFAULT_CFG.cutoffs));
+  if(!Array.isArray(c.rooms)||!c.rooms.length) c.rooms = JSON.parse(JSON.stringify(DEFAULT_CFG.rooms));
+  return c;
+}
 
 function keyLetters(){ return (cfg.key||"").replace(/[^A-Ea-e]/g,"").toUpperCase(); }
 
-function saveCfg(){ lsSet(cfg); }
+function saveCfg(){ scheduleSave(); }
 
 /* ---- setup tab wiring ---- */
+const CFG_BINDINGS=[];
 function bindCfgInput(id, prop, isNum){
   const el=$("#"+id);
   el.value = cfg[prop];
+  CFG_BINDINGS.push({id, prop});
   el.addEventListener("input", ()=>{ cfg[prop] = isNum? +el.value : el.value; saveCfg(); afterCfgChange(id); });
+}
+function refreshSetupUI(){
+  for(const b of CFG_BINDINGS) $("#"+b.id).value = cfg[b.prop];
+  $("#blankAbsent").value = cfg.blankAbsent;
+  $("#preset").value = cfg.preset||"custom";
+  $("#defCap").value = cfg.defCap;
+  $("#keyCount").textContent = keyLetters().length;
+  renderCutoffs();
 }
 function afterCfgChange(src){
   $("#keyCount").textContent = keyLetters().length;
-  if(state.post.ready) runPost();
+  if(src==="ansKey" && state.scansRaw) reparseScans();
+  if(state.scans.ready && state.students.length) runPost();
 }
 const PRESETS = {
   amc1012:{ptC:6,ptB:1.5,ptW:0,keyLen:25},
@@ -482,8 +550,9 @@ function initSetup(){
     saveCfg(); afterCfgChange();
   });
   $("#resetCfg").addEventListener("click",()=>{
-    if(!confirm("恢复全部默认设置？（考场教室、答案、文案都会重置）"))return;
-    cfg = JSON.parse(JSON.stringify(DEFAULT_CFG)); saveCfg(); location.reload();
+    if(!confirm("把当前这个考试的设置恢复为默认？（已上传的报名表/扫卡结果保留）"))return;
+    cfg = JSON.parse(JSON.stringify(DEFAULT_CFG)); refreshSetupUI(); scheduleSave();
+    rebuildSessions(); renderRoster(); if(state.scans.ready) runPost();
   });
   renderCutoffs();
   $("#addCut").addEventListener("click",()=>{ cfg.cutoffs.push({name:"新奖项",mode:"auto",pct:25,manual:""}); saveCfg(); renderCutoffs(); });
@@ -554,12 +623,15 @@ function mapHeaders(header, fields, sampleRows){
 
 /* ============================================================ state */
 const state = {
-  rosterFiles:[],           // {name, header, rows}
+  rosterFiles:[],           // {name, header, rows, idx}
   students:[],              // merged
-  mappingOverride:{},       // field -> colIndex per latest file set (applied to all files by header name match)
+  mappingOverride:{},       // per-file field -> colIndex overrides
   scans:{ready:false,fileName:"",byId:{},dups:[],warns:[]},
+  scansRaw:null,            // {name, aoa} 原始扫卡数据（存档用，改答案后可重新解析）
+  timesOverride:{},         // sessionKey -> times（手改过的时间，存档用）
   post:{ready:false},
   sessions:[], activeSession:0,
+  recCreatedAt:null,
 };
 
 /* ============================================================ file reading */
@@ -644,7 +716,8 @@ function rebuildSessions(){
     if(!groups.has(k)) groups.set(k,[]);
     groups.get(k).push(s);
   }
-  const keepTimes = {}; state.sessions.forEach(ss=>keepTimes[ss.classId]=ss.times);
+  const keepTimes = Object.assign({}, state.timesOverride);
+  state.sessions.forEach(ss=>keepTimes[ss.classId]=ss.times);
   state.sessions=[...groups.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([cid,stus])=>{
     const rooms = cfg.rooms.map(r=>({name:String(r.name||"").trim(), cap: r.cap===""||r.cap==null ? +cfg.defCap||20 : +r.cap, students:[]})).filter(r=>r.name);
     let i=0;
@@ -779,6 +852,7 @@ function renderMapping(){
       state.mappingOverride[f.name]=state.mappingOverride[f.name]||{};
       state.mappingOverride[f.name][k]= sel.value===""? null : +sel.value;
       rebuildStudents(); rebuildSessions(); renderRoster(); if(state.scans.ready) runPost();
+      scheduleSave();
     });
     const lab=document.createElement("label"); lab.textContent=def.label;
     fd.append(lab,sel); grid.appendChild(fd);
@@ -834,7 +908,7 @@ function renderSessions(){
     const fd=document.createElement("div"); fd.className="field";
     fd.innerHTML=`<label>${lab}</label>`;
     const inp=document.createElement("input"); inp.type="text"; inp.value=times[k]; inp.style.width="150px";
-    inp.addEventListener("input",()=>{ times[k]=inp.value; });
+    inp.addEventListener("input",()=>{ times[k]=inp.value; state.timesOverride[sess.classId]=times; scheduleSave(); });
     fd.appendChild(inp); trow.appendChild(fd);
   });
   area.appendChild(trow);
@@ -1069,16 +1143,33 @@ async function handleRosterFiles(files){
   }
   rebuildStudents(); rebuildSessions(); renderRoster();
   if(state.scans.ready) runPost();
+  scheduleSave();
 }
+function reparseScans(){
+  if(!state.scansRaw){ state.scans={ready:false,fileName:"",byId:{},dups:[],warns:[]}; renderScanUI(); return; }
+  try{
+    const r=parseScans(state.scansRaw.name, state.scansRaw.aoa);
+    state.scans={ready:true,fileName:state.scansRaw.name,byId:r.byId,dups:r.dups,warns:r.warns};
+  }catch(e){
+    state.scans={ready:false,fileName:state.scansRaw.name,byId:{},dups:[],warns:[String(e.message)]};
+  }
+  renderScanUI();
+}
+function renderScanUI(){
+  const sc=state.scans;
+  $("#scanTag").innerHTML = sc.fileName?
+    `<span class="filetag">✓ ${esc(sc.fileName)}${sc.ready?"（"+Object.keys(sc.byId).length+" 人）":""}</span>` : "";
+  $("#scanNotes").innerHTML = (sc.warns||[]).map(w=>`<div class="note warn">⚠ ${esc(w)}</div>`).join("");
+}
+function hidePost(){ $("#postResult").style.display="none"; }
 async function handleScanFiles(files){
   const file=files[0]; if(!file) return;
   try{
     const aoa=await readFileToAOA(file);
-    const r=parseScans(file.name, aoa);
-    state.scans={ready:true,fileName:file.name,byId:r.byId,dups:r.dups,warns:r.warns};
-    $("#scanTag").innerHTML=`<span class="filetag">✓ ${esc(file.name)}（${Object.keys(r.byId).length} 人）</span>`;
-    $("#scanNotes").innerHTML=r.warns.map(w=>`<div class="note warn">⚠ ${esc(w)}</div>`).join("");
-    runPost();
+    state.scansRaw={name:file.name, aoa};
+    reparseScans();
+    if(state.scans.ready){ runPost(); } else { toast("读取失败："+(state.scans.warns[0]||"")); }
+    scheduleSave();
   }catch(e){ toast("读取失败："+e.message); $("#scanNotes").innerHTML=`<div class="note warn">⚠ ${esc(e.message)}</div>`; }
 }
 
@@ -1095,13 +1186,98 @@ wireDrop($("#dropRoster"),$("#fileRoster"),handleRosterFiles);
 wireDrop($("#dropScans"),$("#fileScans"),handleScanFiles);
 renderRooms();
 
+/* ============================================================ 考试档案：加载/切换/导入导出 */
+let examListCache=[];
+function renderArchiveBar(){
+  const sel=$("#examPicker");
+  examStore.all().then(list=>{
+    examListCache=list.sort((a,b)=>b.updatedAt-a.updatedAt);
+    sel.innerHTML=examListCache.map(e=>{
+      const d=new Date(e.updatedAt);
+      const dt=(d.getMonth()+1)+"/"+d.getDate();
+      return `<option value="${e.id}"${e.id===activeExamId?" selected":""}>${esc(e.id===activeExamId?(cfg.examName||e.name):e.name)}（${dt}）</option>`;
+    }).join("");
+  }).catch(()=>{});
+  const st=$("#saveState");
+  if(!storageOk){ st.textContent="⚠ 无法自动保存（浏览器限制），请常用「导出档案」"; }
+  else if(lastSavedAt){ st.textContent="已自动保存 "+lastSavedAt.toTimeString().slice(0,8); }
+  else st.textContent="自动保存开启";
+}
+async function loadExam(id){
+  const rec=await examStore.get(id); if(!rec) return false;
+  activeExamId=id; lsSet(id, LS_ACTIVE); state.recCreatedAt=rec.createdAt;
+  cfg=normalizeCfg(rec.cfg);
+  state.mappingOverride=rec.mappingOverride||{};
+  state.timesOverride=rec.timesOverride||{};
+  state.rosterFiles=(rec.rosterFiles||[]).map(f=>{ try{ return parseRosterFile(f.name,f.aoa); }catch(e){ return null; } }).filter(Boolean);
+  state.scansRaw=rec.scansRaw||null;
+  state.post={ready:false}; state.sessions=[]; state.activeSession=0; state.students=[];
+  rebuildStudents(); rebuildSessions();
+  reparseScans();
+  refreshSetupUI(); renderRoster();
+  if(state.scans.ready && state.students.length){ runPost(); } else hidePost();
+  renderArchiveBar();
+  return true;
+}
+$("#examPicker").addEventListener("change", async e=>{
+  clearTimeout(saveTimer); await saveNow(); await loadExam(e.target.value);
+});
+$("#examNew").addEventListener("click", async ()=>{
+  clearTimeout(saveTimer); await saveNow();
+  const today=new Date(); const nm="新考试 "+(today.getMonth()+1)+"/"+today.getDate();
+  const rec=newExamRecord(nm); await examStore.put(rec); await loadExam(rec.id);
+  $$(".tabs button")[0].click(); toast("已创建「"+nm+"」，先在这里改名字和答案");
+});
+$("#examDelete").addEventListener("click", async ()=>{
+  if(examListCache.length<=1){ toast("至少保留一个考试"); return; }
+  if(!confirm("删除考试「"+(cfg.examName||"未命名")+"」？它的报名表、扫卡结果和设置将从本浏览器移除（建议先导出档案备份）。")) return;
+  const gone=activeExamId; await examStore.del(gone);
+  const rest=(await examStore.all()).sort((a,b)=>b.updatedAt-a.updatedAt);
+  await loadExam(rest[0].id); toast("已删除");
+});
+$("#examExport").addEventListener("click", async ()=>{
+  clearTimeout(saveTimer); await saveNow();
+  const payload=JSON.stringify({app:"mock-ops-desk", version:1, exportedAt:new Date().toISOString(), exam:currentRecord()});
+  const safe=(cfg.examName||"考试").replace(/[\\/:*?"<>|]/g,"_").slice(0,60);
+  saveFile("考试档案_"+safe+".json", payload);
+});
+$("#examImport").addEventListener("click", ()=>$("#fileArchive").click());
+$("#fileArchive").addEventListener("change", async ()=>{
+  const file=$("#fileArchive").files[0]; $("#fileArchive").value=""; if(!file) return;
+  try{
+    const obj=JSON.parse(await file.text());
+    const rec=obj && obj.exam;
+    if(!rec || !rec.cfg) throw new Error("这不是本工具导出的考试档案文件");
+    clearTimeout(saveTimer); await saveNow();
+    rec.id="ex_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+    rec.updatedAt=Date.now(); rec.createdAt=rec.createdAt||Date.now();
+    await examStore.put(rec); await loadExam(rec.id);
+    toast("已导入「"+(rec.name||rec.cfg.examName||"考试")+"」");
+  }catch(e){ toast("导入失败："+e.message); }
+});
+(async function initArchive(){
+  try{
+    let exams=await examStore.all();
+    if(!exams.length){
+      const legacy=lsGet(LS_KEY);   // 老版本的全局配置 → 迁移成第一个考试
+      const rec=newExamRecord((legacy&&legacy.examName)||DEFAULT_CFG.examName, legacy?normalizeCfg(legacy):null);
+      await examStore.put(rec); exams=[rec];
+    }
+    const wanted=lsGet(LS_ACTIVE);
+    const pick=exams.find(e=>e.id===wanted)||exams.sort((a,b)=>b.updatedAt-a.updatedAt)[0];
+    await loadExam(pick.id);
+  }catch(e){
+    storageOk=false; renderArchiveBar();
+  }
+})();
+
 /* test hook (used for automated verification; harmless for users) */
 window.__t = {
-  state, cfg,
+  state, get cfg(){ return cfg; },
+  loadExam, saveNow, examStore, reparseScans, currentRecord,
   loadRosterAOA(name,aoa){ const p=parseRosterFile(name,aoa); state.rosterFiles=state.rosterFiles.filter(f=>f.name!==name); state.rosterFiles.push(p);
-    rebuildStudents(); rebuildSessions(); renderRoster(); if(state.scans.ready) runPost(); },
-  loadScansAOA(name,aoa){ const r=parseScans(name,aoa); state.scans={ready:true,fileName:name,byId:r.byId,dups:r.dups,warns:r.warns};
-    $("#scanTag").innerHTML='<span class="filetag">✓ '+esc(name)+'</span>'; runPost(); },
+    rebuildStudents(); rebuildSessions(); renderRoster(); if(state.scans.ready) runPost(); scheduleSave(); },
+  loadScansAOA(name,aoa){ state.scansRaw={name, aoa}; reparseScans(); if(state.scans.ready) runPost(); scheduleSave(); },
   runPost, buildStickers, buildSignin,
 };
 </script>

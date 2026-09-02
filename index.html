@@ -147,6 +147,14 @@ table.ui tr:hover td{background:var(--panel2)}
 .searchbar{display:flex;gap:10px;align-items:center;margin-top:14px}
 .searchbar input{flex:1;max-width:320px}
 
+/* modal */
+.modalwrap{position:fixed;inset:0;background:rgba(17,19,21,.45);z-index:80;display:flex;align-items:center;justify-content:center}
+.modalwrap[hidden]{display:none}
+.modalcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:20px 22px;width:min(430px,90vw)}
+.modalcard h3{font-size:15px;margin-bottom:12px}
+.modalcard input{width:100%}
+.modalcard .row{margin-top:14px;justify-content:flex-end}
+
 /* toast */
 #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);
   border-radius:10px;padding:10px 20px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;
@@ -262,7 +270,7 @@ table.ui tr:hover td{background:var(--panel2)}
 
     <div class="card">
       <h2>奖线</h2>
-      <p class="hint">填「自动」按排名前百分比取实际分数；也可以直接填死分数。名称可改，方便别的考试套用。</p>
+      <p class="hint">填「自动」按排名前百分比取实际分数；也可以直接填死分数，名称随意改。<b>不想要奖线</b>：把每一档都删掉（或选「固定」留空），小纸条和成绩单上就不会出现奖线。</p>
       <div class="tblwrap"><table class="ui" id="cutTable">
         <thead><tr><th>奖项名称</th><th>方式</th><th>前百分比 %</th><th>固定分数</th><th></th></tr></thead>
         <tbody></tbody>
@@ -372,6 +380,17 @@ table.ui tr:hover td{background:var(--panel2)}
 
   <p class="footer">所有数据都只存在<b>这台电脑的这个浏览器</b>里（自动保存），不会上传到任何服务器；重要考试建议定期「导出档案」备份。<br>
   判分规则、奖线、文案都在「考试设置」里；不同考试建多个档案随时切换（题数由答案长度决定）。</p>
+</div>
+
+<div id="nameModal" class="modalwrap" hidden>
+  <div class="modalcard">
+    <h3 id="nameModalTitle">新考试的名称</h3>
+    <input type="text" id="nameModalInput" placeholder="例：August 2026 AMC 10 Mock">
+    <div class="row">
+      <button class="btn small" id="nameModalCancel">取消</button>
+      <button class="btn small primary" id="nameModalOk">创建</button>
+    </div>
+  </div>
 </div>
 
 <div id="printRoot"></div>
@@ -500,7 +519,7 @@ const DEFAULT_CFG = {
 let cfg = JSON.parse(JSON.stringify(DEFAULT_CFG));   // 实际内容由当前考试档案决定
 function normalizeCfg(c){
   c = Object.assign(JSON.parse(JSON.stringify(DEFAULT_CFG)), c||{});
-  if(!Array.isArray(c.cutoffs)||!c.cutoffs.length) c.cutoffs = JSON.parse(JSON.stringify(DEFAULT_CFG.cutoffs));
+  if(!Array.isArray(c.cutoffs)) c.cutoffs = JSON.parse(JSON.stringify(DEFAULT_CFG.cutoffs));
   if(!Array.isArray(c.rooms)||!c.rooms.length) c.rooms = JSON.parse(JSON.stringify(DEFAULT_CFG.rooms));
   return c;
 }
@@ -804,7 +823,9 @@ function runPost(){
     max:scores[0],
     qCorrect:[...key].map((k,q)=>scored.filter(s=>s.choices[q]===k).length/scored.length),
   };
-  const cutoffs=cfg.cutoffs.map(c=>{
+  const cutoffs=cfg.cutoffs
+    .filter(c=>String(c.name||"").trim() && !(c.mode==="manual" && !(+c.manual)))
+    .map(c=>{
     let v;
     if(c.mode==="manual") v=+c.manual||0;
     else { const idx=Math.max(0,Math.min(scores.length-1, Math.round(scores.length*(+c.pct||0)/100)-1)); v=scores[idx]; }
@@ -1014,7 +1035,9 @@ function slipHtml(s){
     const pt = s.absent? "—" : fmtNum(s.per[q]);
     detail+=`<tr><td style="${tdc}">${q+1}</td><td style="${tdc}">${key[q]}</td><td style="${tdc}">${esc(ch)}</td><td style="${tdc}">${fmtNum(cfg.ptC)}</td><td style="${tdc}">${pt}</td></tr>`;
   }
-  const cuts=P.cutoffs.map(c=>`<tr><td style="${td}">${esc(c.name)}</td><td style="${tdc}">${fmtNum(c.value)}</td></tr>`).join("");
+  const cutsTable = P.cutoffs.length?
+    `<table style="border-collapse:collapse;margin-top:8px"><tr><td colspan="2" style="${hd}">Suggested Award Cutoffs</td></tr>`+
+    P.cutoffs.map(c=>`<tr><td style="${td}">${esc(c.name)}</td><td style="${tdc}">${fmtNum(c.value)}</td></tr>`).join("")+`</table>` : "";
   return `<div class="p-slip" style="font-family:Arial,'PingFang SC',sans-serif">
   <p>Dear ${esc(s.name)},</p>
   <p>${esc(cfg.emIntro)}</p>
@@ -1024,7 +1047,7 @@ function slipHtml(s){
     <tr><td style="${td}">Student ID:</td><td style="${tdc}">${esc(s.id)}</td><td style="${td}">Median:</td><td style="${tdc}">${fmtNum(P.stats.median)}</td></tr>
     <tr><td style="${td}">Score:</td><td style="${tdc}"><b>${scoreTxt}</b></td><td style="${td}">Highest score:</td><td style="${tdc}">${fmtNum(P.stats.max)}</td></tr>
     <tr><td style="${td}"></td><td style="${td}"></td><td style="${td}">Total number of participants:</td><td style="${tdc}">${P.stats.count}</td></tr></table>
-  <table style="border-collapse:collapse;margin-top:8px"><tr><td colspan="2" style="${hd}">Suggested Award Cutoffs</td></tr>${cuts}</table>
+  ${cutsTable}
   <table style="border-collapse:collapse;margin-top:8px"><tr><td style="${hd}">Question</td><td style="${hd}">Answer</td><td style="${hd}">Student's Choice</td><td style="${hd}">Total Points</td><td style="${hd}">Points Earned</td></tr>${detail}</table>
   ${cfg.emBookletLine?`<p>${esc(cfg.emBookletLine)}<br><a href="${esc(cfg.emBookletLink)}">${esc(cfg.emBookletLink)}</a></p>`:""}
   ${cfg.emExtra?`<p>${esc(cfg.emExtra)}</p>`:""}
@@ -1222,11 +1245,28 @@ async function loadExam(id){
 $("#examPicker").addEventListener("change", async e=>{
   clearTimeout(saveTimer); await saveNow(); await loadExam(e.target.value);
 });
+function askName(title, placeholder){
+  return new Promise(res=>{
+    const wrap=$("#nameModal"), inp=$("#nameModalInput");
+    $("#nameModalTitle").textContent=title;
+    inp.value=""; inp.placeholder=placeholder||"";
+    wrap.hidden=false; setTimeout(()=>inp.focus(), 30);
+    function done(v){ wrap.hidden=true;
+      $("#nameModalOk").onclick=$("#nameModalCancel").onclick=wrap.onclick=inp.onkeydown=null; res(v); }
+    $("#nameModalOk").onclick=()=>done(inp.value);
+    $("#nameModalCancel").onclick=()=>done(null);
+    wrap.onclick=e=>{ if(e.target===wrap) done(null); };
+    inp.onkeydown=e=>{ if(e.key==="Enter") done(inp.value); if(e.key==="Escape") done(null); };
+  });
+}
 $("#examNew").addEventListener("click", async ()=>{
+  const today=new Date(); const defName="新考试 "+(today.getMonth()+1)+"/"+today.getDate();
+  const typed=await askName("新考试的名称（直接输入，回车确认）", "例：August 2026 AMC 10 Mock");
+  if(typed===null) return;
   clearTimeout(saveTimer); await saveNow();
-  const today=new Date(); const nm="新考试 "+(today.getMonth()+1)+"/"+today.getDate();
+  const nm=String(typed).trim()||defName;
   const rec=newExamRecord(nm); await examStore.put(rec); await loadExam(rec.id);
-  $$(".tabs button")[0].click(); toast("已创建「"+nm+"」，先在这里改名字和答案");
+  $$(".tabs button")[0].click(); toast("已创建「"+nm+"」");
 });
 $("#examDelete").addEventListener("click", async ()=>{
   if(examListCache.length<=1){ toast("至少保留一个考试"); return; }

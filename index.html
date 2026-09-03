@@ -173,6 +173,7 @@ table.ui tr:hover td{background:var(--panel2)}
 /* ---------- print ---------- */
 #printRoot{display:none}
 @media print{
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{background:#fff}
   .app,#toast{display:none!important}
   #printRoot{display:block;color:#111;font-family:var(--sans)}
@@ -402,10 +403,8 @@ table.ui tr:hover td{background:var(--panel2)}
           <input type="text" id="cardTitle" placeholder="例：Think Academy AMC8 Mock Exam Round 3"></div>
       </div>
       <div class="row" style="margin-top:10px">
-        <div class="field" style="flex:1;min-width:260px"><label for="cardInfo1">信息行 1</label>
-          <input type="text" id="cardInfo1"></div>
-        <div class="field" style="flex:1;min-width:200px"><label for="cardInfo2">信息行 2</label>
-          <input type="text" id="cardInfo2"></div>
+        <div class="field" style="flex:1;min-width:260px"><label for="cardSection">Section 文本 <span class="fh">— 印在信息行里，留空=用考试名称；Student ID / Name / Seat / Page 均自动填写，学生无需手填</span></label>
+          <input type="text" id="cardSection" placeholder="例：AMC10 Mock - Think Academy"></div>
       </div>
       <div class="row" style="margin-top:12px;align-items:center">
         <button class="btn" id="upBarcode">上传条码图</button>
@@ -641,8 +640,7 @@ const DEFAULT_CFG = {
   slipSubject:"{exam} - Results for {name}",
   receiptSubject:"{exam} - Exam Information for {name}",
   receiptBody:"Dear Parent of {name},\n\nYour child is registered for {exam}. Here is the exam-day information:\n\nClassroom: {room}\nSeat Number: {seat}\nDate: {date}\nCheck-in: {signin}\nExam Time: {start} - {end}\nPick-up: {pickup}\n\nPlease arrive during the check-in window and bring a pencil and eraser. See you there!\n\nThink Academy",
-  cardTitle:"", cardInfo1:"Grade:               Test ID:               on               , Page: 1",
-  cardInfo2:"Section: ", cardBarcode:"",
+  cardTitle:"", cardSection:"", cardBarcode:"",
   emBookletLine:"Exam Booklet (Student Version and Answer)",
   emBookletLink:"",
   emExtra:"",
@@ -695,7 +693,7 @@ function initSetup(){
   bindCfgInput("emIntro","emIntro"); bindCfgInput("emBookletLine","emBookletLine");
   bindCfgInput("emBookletLink","emBookletLink"); bindCfgInput("emExtra","emExtra"); bindCfgInput("emSign","emSign");
   bindCfgInput("receiptSubject","receiptSubject"); bindCfgInput("receiptBody","receiptBody");
-  bindCfgInput("cardTitle","cardTitle"); bindCfgInput("cardInfo1","cardInfo1"); bindCfgInput("cardInfo2","cardInfo2");
+  bindCfgInput("cardTitle","cardTitle"); bindCfgInput("cardSection","cardSection");
   bindCfgInput("slipSubject","slipSubject");
   const bcState=()=>{ $("#barcodeState").textContent = cfg.cardBarcode? "使用自定义条码":"使用默认条码（5月模板）";
     $("#clearBarcode").style.display = cfg.cardBarcode? "":"none"; };
@@ -1281,17 +1279,18 @@ function buildAnswerCard(stu){
       const hit = digits && digits[col] === String(d);
       return `<span${hit? ' class="idfill"':''}>${d}</span>`;
     }).join("")+`</div>`).join("");
-  const stuLine = stu
-    ? `
-Name: ${stu.name}      Student ID: ${stu.id}      Seat: ${stu.seat||""}`
-    : "";
+  const section = cfg.cardSection || cfg.examName || "";
+  const info = stu
+    ? `Student ID: ${stu.id}      Section: ${section}      Page: 1
+Name: ${stu.name}      Seat: ${stu.seat||""}`
+    : `Student ID: ______________      Section: ${section}      Page: 1
+Name: ______________________      Seat: ________`;
   return `<div class="p-card">
     <span class="corner c-tl"></span><span class="corner c-tr"></span>
     <span class="corner c-bl"></span><span class="corner c-br"></span>
     <div class="cardtitle">${esc(title)}</div>
     <div class="barcode">${barcode}</div>
-    <div class="cardinfo">${esc(cfg.cardInfo1||"")}
-${esc(cfg.cardInfo2||"")}${esc(stuLine)}</div>
+    <div class="cardinfo">${esc(info)}</div>
     <div class="cardbox">${qcols}<div class="idgrid">${idcols}</div></div>
     <div class="barcode barcode-bottom">${barcode}</div>
   </div>`;
@@ -1373,6 +1372,7 @@ function buildAllSlips(){
   return [...state.post.scored, ...state.post.absent].map(s=>slipHtml(s, state.post)).join("");
 }
 const STANDALONE_CSS = `
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{font-family:Arial,'PingFang SC','Microsoft YaHei',sans-serif;color:#111;margin:24px}
   @page{margin:12mm}
   .p-room{page-break-after:always}

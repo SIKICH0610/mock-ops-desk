@@ -180,12 +180,34 @@ table.ui tr:hover td{background:var(--panel2)}
   .p-room{page-break-after:always}
   .p-room:last-child{page-break-after:auto}
   .p-roomtitle{font-size:12px;color:#555;margin:0 0 8px;font-weight:600}
-  .p-stickers{display:grid;grid-template-columns:1fr 1fr;gap:0;border-left:1px solid #999;border-top:1px solid #999}
-  .p-sticker{border-right:1px solid #999;border-bottom:1px solid #999;height:128px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;break-inside:avoid}
-  .p-sticker .sid{font-size:12px;color:#333}
-  .p-sticker .snm{font-size:19px;font-weight:700}
-  .p-sticker .sst{font-size:23px;font-weight:700;font-family:var(--mono);letter-spacing:.06em}
+  table.stk{border-collapse:collapse;width:100%;table-layout:fixed}
+  table.stk th,table.stk td{border:1.5px solid #222}
+  table.stk th{font-size:11px;font-weight:600;padding:2px;color:#333}
+  td.stkc{height:0.86in;text-align:center;vertical-align:middle;padding:2px}
+  td.stkc .l1{font-size:10px;color:#333}
+  td.stkc .l2{font-size:13px;font-family:var(--mono)}
+  td.stkc .l3{font-size:15px;font-weight:700}
+  td.stkc .l4{font-size:17px;font-weight:700;font-family:var(--mono);letter-spacing:.05em}
+  tr{break-inside:avoid}
+  .p-receipt{height:3.1in;padding:14px 18px;border-bottom:1.5px dashed #666;break-inside:avoid;box-sizing:border-box}
+  .p-card{position:relative;height:9.95in;page-break-after:always}
+  .p-card:last-child{page-break-after:auto}
+  .p-card .corner{position:absolute;width:0.27in;height:0.27in;background:#000}
+  .p-card .c-tl{top:0;left:0}.p-card .c-tr{top:0;right:0}.p-card .c-bl{bottom:0;left:0}.p-card .c-br{bottom:0;right:0}
+  .p-card .cardtitle{text-align:center;font-size:15pt;font-weight:600;margin:0.02in 0 0}
+  .p-card .barcode{display:block;height:0.44in;margin:0.22in 0 0 0.55in}
+  .p-card .barcode img{height:100%;display:block}
+  .p-card .barcode-bottom{position:absolute;bottom:0.05in;left:0.9in;height:0.44in}
+  .p-card .barcode-ph{width:3.6in;height:0.44in;border:1.5px dashed #999;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#888}
+  .p-card .cardinfo{font-size:12pt;margin:0.16in 0 0 0.4in;line-height:1.45;white-space:pre-wrap}
+  .p-card .cardbox{border:3.5px solid #000;margin:0.18in 0.15in 0;height:7.35in;position:relative;padding-top:0.1in}
+  .p-card .qcol{position:absolute;top:0.12in;display:flex;flex-direction:column;justify-content:flex-start}
+  .p-card .qrow{display:flex;align-items:center;gap:0.085in;height:0.283in}
+  .p-card .qnum{width:0.34in;text-align:right;font-size:8pt;color:#333;font-family:Arial}
+  .p-card .bub{width:0.2in;height:0.2in;border:1.6px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7.5pt;color:#444}
+  .p-card .idgrid{position:absolute;top:0.12in;right:0.28in;border:3px solid #000;width:3.15in;height:3.55in;display:flex}
+  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.07in 0;font-size:9.5pt;color:#666;font-family:Arial}
+  .p-card .idcol+.idcol{border-left:1px solid #bbb}
   .p-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px}
   table.p-meta,table.p-sign{border-collapse:collapse;width:100%}
   table.p-meta td,table.p-sign td,table.p-sign th{border:1px solid #444;padding:6px 9px;font-size:13px}
@@ -219,9 +241,10 @@ table.ui tr:hover td{background:var(--panel2)}
       <button class="btn small" id="examExport">导出档案</button>
       <button class="btn small" id="examImport">导入档案</button>
       <button class="btn small" id="examDelete">删除</button>
-      <span class="chip" id="saveState">自动保存</span>
+      <button class="btn small primary" id="examSave">保存</button>
+      <span class="chip" id="saveState">未保存</span>
     </div>
-    <p class="hint" style="margin:8px 0 0">每个考试的报名表、扫卡结果、设置都自动存在<b>本浏览器</b>里 —— 考前考后隔多久都能随时切回来接着用。换电脑或交接给同事：「导出档案」生成一个文件，对方「导入档案」即可。</p>
+    <p class="hint" style="margin:8px 0 0">每个考试的报名表、扫卡结果、设置都存在<b>本浏览器</b>里 —— 改动后记得点「<b>保存</b>」（保存的同时会刷新全部结果）。考前考后隔多久都能切回来接着用；换电脑或交接：「导出档案」生成文件，对方「导入档案」即可。</p>
     <input type="file" id="fileArchive" accept=".json,application/json" style="display:none">
   </div>
 
@@ -300,6 +323,22 @@ table.ui tr:hover td{background:var(--panel2)}
         <button class="btn small" id="resetCfg">恢复默认设置</button>
       </div>
     </div>
+
+    <div class="card">
+      <h2>邮件发送（Gmail 授权）</h2>
+      <p class="hint">连接自己的 Gmail 后，可在「考前」一键群发回执单、在「考后」一键群发查分条（逐个学生单独成信）。授权在 Google 官方弹窗里完成，本工具碰不到你的密码；授权只在当前页面会话有效。<b>首次使用需一次性配置 Client ID</b>：打开 console.cloud.google.com → 建项目 → 「OAuth consent screen」选 External 并把自己的邮箱加为 Test user → 「Credentials → Create credentials → OAuth client ID → Web application」，Authorized JavaScript origins 填 <span class="mono">https://sikich0610.github.io</span> → 把生成的 Client ID 粘到下面（只需配一次，之后所有考试通用）。</p>
+      <div class="row" style="align-items:flex-end">
+        <div class="field" style="flex:1;min-width:300px"><label for="gmailCID">Google OAuth Client ID</label>
+          <input type="text" id="gmailCID" class="mono" placeholder="例：1234567890-abc.apps.googleusercontent.com"></div>
+        <button class="btn primary" id="gmailAuthBtn">授权 / 登录</button>
+        <span class="chip" id="gmailState">未连接</span>
+        <button class="btn small" id="gmailSignout" style="display:none">断开</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="field" style="flex:1;min-width:280px"><label for="slipSubject">查分条邮件主题 <span class="fh">— {exam} {name} 会自动替换</span></label>
+          <input type="text" id="slipSubject"></div>
+      </div>
+    </div>
   </section>
 
   <!-- ================= TAB 2 PRE ================= -->
@@ -332,8 +371,47 @@ table.ui tr:hover td{background:var(--panel2)}
       <div id="roomNotes"></div>
     </div>
 
+    <div class="card">
+      <h2>③ 回执单（考位通知）</h2>
+      <p class="hint">分完教室后发给家长的通知，内容随便编辑。占位符 <span class="mono">{name} {exam} {room} {seat} {date} {signin} {start} {end} {pickup}</span> 会替换成每个学生的实际考位信息。打印版每页 3 张、带裁切虚线；也可以在下方「生成材料」里群发邮件。</p>
+      <div class="row">
+        <div class="field" style="flex:1;min-width:280px"><label for="receiptSubject">邮件主题 <span class="fh">— 群发回执单邮件时用</span></label>
+          <input type="text" id="receiptSubject"></div>
+      </div>
+      <div class="field" style="margin-top:10px"><label for="receiptBody">回执单正文</label>
+        <textarea id="receiptBody" rows="9" class="mono" style="font-size:13px"></textarea></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="previewReceipt">预览回执单</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>④ 答题卡</h2>
+      <p class="hint">版式严格按扫卡系统原版复刻（四角定位块、标题、条码区、题号涂圈、右侧 7 位学号格）。题数由「考试设置」里的答案长度决定。<b>条形码由扫卡系统按考试生成</b>：把官方答题卡上的条码截图上传到这里即可原样印出；不上传则打印占位框（扫卡系统可能无法识别，仅供应急）。</p>
+      <div class="row">
+        <div class="field" style="flex:1;min-width:240px"><label for="cardTitle">答题卡标题 <span class="fh">— 留空则用考试名称</span></label>
+          <input type="text" id="cardTitle" placeholder="例：Think Academy AMC8 Mock Exam Round 3"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div class="field" style="flex:1;min-width:260px"><label for="cardInfo1">信息行 1</label>
+          <input type="text" id="cardInfo1"></div>
+        <div class="field" style="flex:1;min-width:200px"><label for="cardInfo2">信息行 2</label>
+          <input type="text" id="cardInfo2"></div>
+      </div>
+      <div class="row" style="margin-top:12px;align-items:center">
+        <button class="btn" id="upBarcode">上传条码图</button>
+        <span id="barcodeState" class="chip">未上传</span>
+        <button class="btn small" id="clearBarcode" style="display:none">清除条码</button>
+        <input type="file" id="fileBarcode" accept="image/*" style="display:none">
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="printCard">打印答题卡</button>
+        <span class="chip">打印时选择需要的份数即可</span>
+      </div>
+    </div>
+
     <div class="card" id="preResult" style="display:none">
-      <h2>③ 生成材料</h2>
+      <h2>⑤ 生成材料</h2>
       <p class="hint">时间自动从报名表推算（开考前30~10分钟签到、结束后5分钟接娃），可以直接改。</p>
       <div id="sessionArea"></div>
     </div>
@@ -358,7 +436,8 @@ table.ui tr:hover td{background:var(--panel2)}
       <div class="card">
         <h2>② 成绩总览</h2>
         <div class="stats" id="statTiles"></div>
-        <div id="cutoffLine" class="chips"></div>
+        <div id="distChart"></div>
+        <div id="cutoffLine" class="chips" style="margin-top:14px"></div>
         <div class="qbars" id="qbars"></div>
         <div class="row" style="margin-top:16px">
           <button class="btn primary" id="dlMaster">下载 成绩总表.xlsx</button>
@@ -372,6 +451,7 @@ table.ui tr:hover td{background:var(--panel2)}
         <p class="hint">点「复制」得到带表格的富文本，直接粘贴进 Gmail / Outlook 正文；也可以整套打印。</p>
         <div class="row">
           <button class="btn primary" id="printSlips">打印全部小纸条</button>
+          <button class="btn" id="sendSlips">Gmail 群发查分条</button>
           <button class="btn" id="dlSlipsHtml">下载打印版（HTML）</button>
         </div>
         <div class="searchbar">
@@ -385,6 +465,22 @@ table.ui tr:hover td{background:var(--panel2)}
 
   <p class="footer">所有数据都只存在<b>这台电脑的这个浏览器</b>里（自动保存），不会上传到任何服务器；重要考试建议定期「导出档案」备份。<br>
   判分规则、奖线、文案都在「考试设置」里；不同考试建多个档案随时切换（题数由答案长度决定）。</p>
+</div>
+
+<div id="sendModal" class="modalwrap" hidden>
+  <div class="modalcard" style="width:min(560px,94vw)">
+    <h3 id="sendTitle">群发</h3>
+    <p class="hint" id="sendIntro" style="margin:0 0 8px"></p>
+    <div style="height:8px;background:var(--chip);border-radius:4px;overflow:hidden;margin:8px 0">
+      <div id="sendBar" style="height:100%;width:0;background:var(--brand)"></div></div>
+    <div id="sendStat" class="hint" style="margin:4px 0"></div>
+    <div id="sendLog" style="max-height:180px;overflow:auto"></div>
+    <div class="row" style="justify-content:flex-end;margin-top:12px">
+      <button class="btn small" id="sendStop">停止</button>
+      <button class="btn small primary" id="sendStart">开始发送</button>
+      <button class="btn small" id="sendCloseBtn">关闭</button>
+    </div>
+  </div>
 </div>
 
 <div id="previewModal" class="modalwrap" hidden>
@@ -489,7 +585,7 @@ const examStore={
   put(rec){ return idbReq("readwrite",st=>st.put(rec)); },
   del(id){ return idbReq("readwrite",st=>st.delete(id)); },
 };
-let activeExamId=null, saveTimer=null, lastSavedAt=null, storageOk=true;
+let activeExamId=null, saveTimer=null, lastSavedAt=null, storageOk=true, dirty=false;
 function newExamRecord(name, cfgObj){
   const c = cfgObj||JSON.parse(JSON.stringify(DEFAULT_CFG));
   if(name) c.examName = name;
@@ -505,12 +601,22 @@ function currentRecord(){
     mappingOverride:state.mappingOverride, scansRaw:state.scansRaw,
     timesOverride:state.timesOverride};
 }
-function scheduleSave(){ if(!activeExamId||!storageOk) return;
-  clearTimeout(saveTimer); saveTimer=setTimeout(saveNow, 700); }
+function scheduleSave(){   // 手动保存模式：只标记“有未保存修改”
+  if(!activeExamId) return;
+  dirty=true; renderArchiveBar();
+}
 async function saveNow(){ if(!activeExamId||!storageOk) return;
-  try{ await examStore.put(currentRecord()); lastSavedAt=new Date(); renderArchiveBar(); }
+  try{ await examStore.put(currentRecord()); lastSavedAt=new Date(); dirty=false; renderArchiveBar(); }
   catch(e){ storageOk=false; renderArchiveBar(); }
 }
+async function confirmIfDirty(){   // 返回 false = 用户选择留在当前考试
+  if(!dirty) return true;
+  if(confirm("当前考试有未保存的修改。\n\n按「确定」= 先保存再继续；按「取消」= 留在当前考试。")){
+    await saveNow(); return true;
+  }
+  return false;
+}
+window.addEventListener("beforeunload", e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
 
 /* ============================================================ config */
 const DEFAULT_CFG = {
@@ -523,6 +629,11 @@ const DEFAULT_CFG = {
     {name:"Distinction", mode:"auto", pct:10, manual:""},
   ],
   emIntro:"Thank you for your participation in {exam} at Think Academy.",
+  slipSubject:"{exam} - Results for {name}",
+  receiptSubject:"{exam} - Exam Information for {name}",
+  receiptBody:"Dear Parent of {name},\n\nYour child is registered for {exam}. Here is the exam-day information:\n\nClassroom: {room}\nSeat Number: {seat}\nDate: {date}\nCheck-in: {signin}\nExam Time: {start} - {end}\nPick-up: {pickup}\n\nPlease arrive during the check-in window and bring a pencil and eraser. See you there!\n\nThink Academy",
+  cardTitle:"", cardInfo1:"Grade:               Test ID:               on               , Page: 1",
+  cardInfo2:"Section: ", cardBarcode:"",
   emBookletLine:"Exam Booklet (Student Version and Answer)",
   emBookletLink:"",
   emExtra:"",
@@ -556,6 +667,7 @@ function refreshSetupUI(){
   $("#preset").value = cfg.preset||"custom";
   $("#defCap").value = cfg.defCap;
   $("#keyCount").textContent = keyLetters().length;
+  if(window.__bcState) window.__bcState();
   renderCutoffs();
 }
 function afterCfgChange(src){
@@ -572,6 +684,21 @@ function initSetup(){
   bindCfgInput("ptC","ptC",true); bindCfgInput("ptB","ptB",true); bindCfgInput("ptW","ptW",true);
   bindCfgInput("emIntro","emIntro"); bindCfgInput("emBookletLine","emBookletLine");
   bindCfgInput("emBookletLink","emBookletLink"); bindCfgInput("emExtra","emExtra"); bindCfgInput("emSign","emSign");
+  bindCfgInput("receiptSubject","receiptSubject"); bindCfgInput("receiptBody","receiptBody");
+  bindCfgInput("cardTitle","cardTitle"); bindCfgInput("cardInfo1","cardInfo1"); bindCfgInput("cardInfo2","cardInfo2");
+  bindCfgInput("slipSubject","slipSubject");
+  const bcState=()=>{ $("#barcodeState").textContent = cfg.cardBarcode? "已上传条码图":"未上传";
+    $("#clearBarcode").style.display = cfg.cardBarcode? "":"none"; };
+  $("#upBarcode").addEventListener("click",()=>$("#fileBarcode").click());
+  $("#fileBarcode").addEventListener("change",()=>{
+    const f=$("#fileBarcode").files[0]; $("#fileBarcode").value=""; if(!f) return;
+    const fr=new FileReader();
+    fr.onload=()=>{ cfg.cardBarcode=fr.result; bcState(); scheduleSave(); toast("条码图已就位，记得点保存"); };
+    fr.readAsDataURL(f);
+  });
+  $("#clearBarcode").addEventListener("click",()=>{ cfg.cardBarcode=""; bcState(); scheduleSave(); });
+  $("#printCard").addEventListener("click",()=>printHtml(buildAnswerCard()));
+  window.__bcState=bcState; bcState();
   const bl=$("#blankAbsent"); bl.value=cfg.blankAbsent;
   bl.addEventListener("change",()=>{cfg.blankAbsent=bl.value; saveCfg(); afterCfgChange();});
   const pr=$("#preset"); pr.value=cfg.preset||"custom";
@@ -956,11 +1083,15 @@ function renderSessions(){
   const btns=document.createElement("div"); btns.className="row"; btns.style.marginTop="16px";
   btns.innerHTML=`<button class="btn primary" id="printStk">打印座位贴</button>
     <button class="btn primary" id="printSgn">打印签到表</button>
+    <button class="btn" id="printRcp">打印全部回执单</button>
+    <button class="btn" id="sendRcp">Gmail 群发回执单</button>
     <button class="btn" id="dlRoomX">下载 考场安排.xlsx</button>
     <button class="btn" id="dlPreHtml">下载打印版（HTML）</button>`;
   area.appendChild(btns);
   $("#printStk").addEventListener("click",()=>printHtml(buildStickers(sess)));
   $("#printSgn").addEventListener("click",()=>printHtml(buildSignin(sess)));
+  $("#printRcp").addEventListener("click",()=>printHtml(buildReceipts(sess)));
+  $("#sendRcp").addEventListener("click",()=>batchReceipts(sess));
   $("#dlRoomX").addEventListener("click",()=>dlRoomXlsx(sess));
   $("#dlPreHtml").addEventListener("click",()=>saveFile("考前打印_"+sess.label+".html",
       standaloneDoc(cfg.examName+" 考前材料", buildStickers(sess)+'<div style="page-break-after:always"></div>'+buildSignin(sess))));
@@ -976,6 +1107,54 @@ function renderPostRosterState(){
   }
 }
 
+/* ============================================================ score distribution */
+function computeDist(P){
+  const full = P.key.length * (+cfg.ptC || 6);
+  const binW = full > 60 ? 10 : 5;
+  const nBins = Math.ceil(full / binW) || 1;
+  const bins = Array.from({length:nBins}, (_,i)=>({lo:i*binW, hi:Math.min((i+1)*binW, full), count:0}));
+  for(const s of P.scored){
+    let i = Math.floor(s.score / binW); if(i >= nBins) i = nBins-1;
+    bins[i].count++;
+  }
+  return {full, binW, bins, max: Math.max(1, ...bins.map(b=>b.count))};
+}
+function binIndexOf(P, score){
+  const d = computeDist(P);
+  let i = Math.floor(score / d.binW); if(i >= d.bins.length) i = d.bins.length-1;
+  return i;
+}
+/* 邮件安全版：inline 样式的横向分布条，学生所在分数段高亮标记 */
+function distHtmlEmail(P, stu){
+  const d = computeDist(P);
+  const meIdx = stu && !stu.absent ? binIndexOf(P, stu.score) : -1;
+  const rows = d.bins.map((b,i)=>{
+    const me = i === meIdx;
+    const w = b.count ? Math.max(6, Math.round(b.count / d.max * 240)) : 0;
+    const label = `${b.lo}–${fmtNum(b.hi)}`;
+    return `<tr${me? ' style="background:#FBEEEB"':''}>`+
+      `<td style="padding:2px 8px;font-size:12px;text-align:right;color:#333;white-space:nowrap;${me?'font-weight:bold;':''}">${label}</td>`+
+      `<td style="padding:2px 4px;width:250px"><div style="height:11px;width:${w}px;background:${me?'#8F2F20':'#C64934'};border-radius:2px"></div></td>`+
+      `<td style="padding:2px 6px;font-size:12px;color:#333;white-space:nowrap">${b.count||''}${me? ' <b style="color:#8F2F20">◀ '+esc(stu.name)+'</b>':''}</td></tr>`;
+  }).reverse().join("");
+  return `<p style="margin:10px 0 4px"><b>Score Distribution</b> <span style="font-size:12px;color:#555">(all ${P.stats.count} participants)</span></p>`+
+    `<table style="border-collapse:collapse">${rows}</table>`;
+}
+/* 总览面板版：竖向柱状 */
+function renderDistChart(P){
+  const d = computeDist(P);
+  const el = $("#distChart");
+  el.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--muted);margin:14px 0 6px">得分分布（每 ${d.binW} 分一段）</div>`+
+    `<div class="qbars" style="grid-template-columns:repeat(auto-fill,minmax(44px,1fr))">`+
+    d.bins.map(b=>{
+      const pc = Math.round(b.count / d.max * 100);
+      return `<div class="qbar" title="${b.lo}–${fmtNum(b.hi)} 分：${b.count} 人">`+
+        `<span class="pc">${b.count||""}</span>`+
+        `<div class="bar"><div class="fill" style="height:${b.count? Math.max(pc,4):0}%"></div></div>`+
+        `<span>${b.lo}</span></div>`;
+    }).join("")+`</div>`;
+}
+
 /* ============================================================ RENDER: post */
 function renderPost(){
   const P=state.post; if(!P.ready) return;
@@ -983,6 +1162,7 @@ function renderPost(){
   const tiles=[["参考人数",P.stats.count,1],["缺考",P.stats.absent],["未匹配扫描",P.stats.unmatched],
     ["平均分",P.stats.avg,1],["中位数",fmtNum(P.stats.median)],["最高分",fmtNum(P.stats.max),1]];
   $("#statTiles").innerHTML=tiles.map(([k,v,hot])=>`<div class="stat${hot?" hot":""}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+  renderDistChart(P);
   $("#cutoffLine").innerHTML=P.cutoffs.map(c=>`<span class="chip">${esc(c.name)} ≥ <b>${fmtNum(c.value)}</b></span>`).join("");
   $("#qbars").innerHTML=P.key.split("").map((k,i)=>{
     const pc=Math.round(P.stats.qCorrect[i]*100);
@@ -1017,11 +1197,69 @@ function renderSlipList(){
 
 /* ============================================================ print/html builders */
 function buildStickers(sess){
-  return sess.rooms.map(r=>`<div class="p-room">
-    <p class="p-roomtitle">${esc(cfg.examName)} — 教室 ${esc(r.name)}（${r.students.length}人）</p>
-    <div class="p-stickers">${r.students.map(s=>`<div class="p-sticker">
-      <span class="sid">Student ID: ${esc(s.id)}</span><span class="snm">${esc(s.name)}</span><span class="sst">${esc(s.seat)}</span>
-    </div>`).join("")}</div></div>`).join("");
+  const cell = st => st
+    ? `<td class="stkc"><div class="l1">Student ID:</div><div class="l2">${esc(st.id)}</div><div class="l3">${esc(st.name)}</div><div class="l4">${esc(st.seat)}</div></td>`
+    : `<td class="stkc"></td>`;
+  return sess.rooms.map(room=>{
+    const pages=[];
+    for(let off=0; off<room.students.length; off+=20) pages.push(room.students.slice(off, off+20));
+    return pages.map((grp, pi)=>{
+      const off = pi*20;
+      const labL = `${off+1}-${off+10}`, labR = `${off+11}-${off+20}`;
+      let rows="";
+      for(let r=0;r<10;r++){
+        if(!grp[r] && !grp[r+10]) break;
+        rows += `<tr>${cell(grp[r])}${cell(grp[r+10])}</tr>`;
+      }
+      return `<div class="p-room"><p class="p-roomtitle">${esc(cfg.examName)} — 教室 ${esc(room.name)}（${room.students.length}人${pages.length>1?"·第"+(pi+1)+"页":""}）</p>
+        <table class="stk"><tr><th>${labL}</th><th>${labR}</th></tr>${rows}</table></div>`;
+    }).join("");
+  }).join("");
+}
+
+/* ---------- 答题卡（严格按原版版式） ---------- */
+function buildAnswerCard(){
+  const key = keyLetters() || "EAEDBDCCBDBADBCCDBCACACDD";
+  const n = key.length;
+  const title = cfg.cardTitle || cfg.examName || "Mock Exam";
+  const barcode = cfg.cardBarcode
+    ? `<img src="${cfg.cardBarcode}" alt="">`
+    : `<div class="barcode-ph">条形码区 — 可在「答题卡」设置里上传本场条码图</div>`;
+  const cols = [];
+  for(let off=0; off<n; off+=25) cols.push(Array.from({length:Math.min(25,n-off)},(_,i)=>off+i+1));
+  const qcols = cols.map((qs,ci)=>`<div class="qcol" style="left:${0.28+ci*2.05}in">`+
+    qs.map(q=>`<div class="qrow"><span class="qnum">${q}</span>`+
+      ["A","B","C","D","E"].map(L=>`<span class="bub">${L}</span>`).join("")+
+    `</div>`).join("")+`</div>`).join("");
+  const idcols = Array.from({length:7},()=>`<div class="idcol">`+
+    Array.from({length:10},(_,d)=>`<span>${d}</span>`).join("")+`</div>`).join("");
+  return `<div class="p-card">
+    <span class="corner c-tl"></span><span class="corner c-tr"></span>
+    <span class="corner c-bl"></span><span class="corner c-br"></span>
+    <div class="cardtitle">${esc(title)}</div>
+    <div class="barcode">${barcode}</div>
+    <div class="cardinfo">${esc(cfg.cardInfo1||"")}
+${esc(cfg.cardInfo2||"")}</div>
+    <div class="cardbox">${qcols}<div class="idgrid">${idcols}</div></div>
+    <div class="barcode barcode-bottom">${barcode}</div>
+  </div>`;
+}
+
+/* ---------- 回执单 ---------- */
+function resolveReceipt(tpl, stu, sess){
+  const map={ "{name}":stu.name, "{exam}":cfg.examName||"", "{room}":stu.room||"", "{seat}":stu.seat||"",
+    "{date}":sess.label||"", "{signin}":sess.times.signin||"", "{start}":sess.times.start||"",
+    "{end}":sess.times.end||"", "{pickup}":sess.times.pickup||"" };
+  let out=String(tpl||"");
+  for(const [k,v] of Object.entries(map)) out=out.split(k).join(v);
+  return out;
+}
+function receiptHtml(stu, sess){
+  return `<div class="p-receipt"><div style="font-weight:700;font-size:14px;margin-bottom:6px">${esc(cfg.examName)}</div>`+
+    `<div style="font-size:12.5px;line-height:1.6;white-space:pre-wrap">${esc(resolveReceipt(cfg.receiptBody, stu, sess))}</div></div>`;
+}
+function buildReceipts(sess){
+  return sess.students.map(s=>receiptHtml(s, sess)).join("");
 }
 function buildSignin(sess){
   const t=sess.times;
@@ -1053,6 +1291,7 @@ function slipHtml(s, P){
   const cutsTable = P.cutoffs.length?
     `<table style="border-collapse:collapse;margin-top:8px"><tr><td colspan="2" style="${hd}">Suggested Award Cutoffs</td></tr>`+
     P.cutoffs.map(c=>`<tr><td style="${td}">${esc(c.name)}</td><td style="${tdc}">${fmtNum(c.value)}</td></tr>`).join("")+`</table>` : "";
+  const distBlock = s.absent ? "" : distHtmlEmail(P, s);
   return `<div class="p-slip" style="font-family:Arial,'PingFang SC',sans-serif">
   <p>Dear ${esc(s.name)},</p>
   <p>${esc(intro)}</p>
@@ -1062,6 +1301,7 @@ function slipHtml(s, P){
     <tr><td style="${td}">Student ID:</td><td style="${tdc}">${esc(s.id)}</td><td style="${td}">Median:</td><td style="${tdc}">${fmtNum(P.stats.median)}</td></tr>
     <tr><td style="${td}">Score:</td><td style="${tdc}"><b>${scoreTxt}</b></td><td style="${td}">Highest score:</td><td style="${tdc}">${fmtNum(P.stats.max)}</td></tr>
     <tr><td style="${td}"></td><td style="${td}"></td><td style="${td}">Total number of participants:</td><td style="${tdc}">${P.stats.count}</td></tr></table>
+  ${distBlock}
   ${cutsTable}
   <table style="border-collapse:collapse;margin-top:8px"><tr><td style="${hd}">Question</td><td style="${hd}">Answer</td><td style="${hd}">Student's Choice</td><td style="${hd}">Total Points</td><td style="${hd}">Points Earned</td></tr>${detail}</table>
   ${(cfg.emBookletLine||cfg.emBookletLink)?`<p>${esc(cfg.emBookletLine)}${cfg.emBookletLink?`<br><a href="${esc(cfg.emBookletLink)}">${esc(cfg.emBookletLink)}</a>`:""}</p>`:""}
@@ -1077,12 +1317,34 @@ const STANDALONE_CSS = `
   .p-room{page-break-after:always}
   .p-room:last-child{page-break-after:auto}
   .p-roomtitle{font-size:12px;color:#555;margin:0 0 8px;font-weight:600}
-  .p-stickers{display:grid;grid-template-columns:1fr 1fr;border-left:1px solid #999;border-top:1px solid #999}
-  .p-sticker{border-right:1px solid #999;border-bottom:1px solid #999;height:128px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;break-inside:avoid}
-  .p-sticker .sid{font-size:12px;color:#333}
-  .p-sticker .snm{font-size:19px;font-weight:700}
-  .p-sticker .sst{font-size:23px;font-weight:700;font-family:Menlo,monospace;letter-spacing:.06em}
+  table.stk{border-collapse:collapse;width:100%;table-layout:fixed}
+  table.stk th,table.stk td{border:1.5px solid #222}
+  table.stk th{font-size:11px;font-weight:600;padding:2px;color:#333}
+  td.stkc{height:0.86in;text-align:center;vertical-align:middle;padding:2px}
+  td.stkc .l1{font-size:10px;color:#333}
+  td.stkc .l2{font-size:13px;font-family:Menlo,monospace}
+  td.stkc .l3{font-size:15px;font-weight:700}
+  td.stkc .l4{font-size:17px;font-weight:700;font-family:Menlo,monospace;letter-spacing:.05em}
+  tr{break-inside:avoid}
+  .p-receipt{height:3.1in;padding:14px 18px;border-bottom:1.5px dashed #666;break-inside:avoid;box-sizing:border-box}
+  .p-card{position:relative;height:9.95in;page-break-after:always}
+  .p-card:last-child{page-break-after:auto}
+  .p-card .corner{position:absolute;width:0.27in;height:0.27in;background:#000}
+  .p-card .c-tl{top:0;left:0}.p-card .c-tr{top:0;right:0}.p-card .c-bl{bottom:0;left:0}.p-card .c-br{bottom:0;right:0}
+  .p-card .cardtitle{text-align:center;font-size:15pt;font-weight:600;margin:0.02in 0 0}
+  .p-card .barcode{display:block;height:0.44in;margin:0.22in 0 0 0.55in}
+  .p-card .barcode img{height:100%;display:block}
+  .p-card .barcode-bottom{position:absolute;bottom:0.05in;left:0.9in;height:0.44in}
+  .p-card .barcode-ph{width:3.6in;height:0.44in;border:1.5px dashed #999;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#888}
+  .p-card .cardinfo{font-size:12pt;margin:0.16in 0 0 0.4in;line-height:1.45;white-space:pre-wrap}
+  .p-card .cardbox{border:3.5px solid #000;margin:0.18in 0.15in 0;height:7.35in;position:relative;padding-top:0.1in}
+  .p-card .qcol{position:absolute;top:0.12in;display:flex;flex-direction:column;justify-content:flex-start}
+  .p-card .qrow{display:flex;align-items:center;gap:0.085in;height:0.283in}
+  .p-card .qnum{width:0.34in;text-align:right;font-size:8pt;color:#333;font-family:Arial}
+  .p-card .bub{width:0.2in;height:0.2in;border:1.6px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7.5pt;color:#444}
+  .p-card .idgrid{position:absolute;top:0.12in;right:0.28in;border:3px solid #000;width:3.15in;height:3.55in;display:flex}
+  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.07in 0;font-size:9.5pt;color:#666;font-family:Arial}
+  .p-card .idcol+.idcol{border-left:1px solid #bbb}
   .p-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px}
   table.p-meta,table.p-sign{border-collapse:collapse;width:100%}
   table.p-meta td,table.p-sign td,table.p-sign th{border:1px solid #444;padding:6px 9px;font-size:13px}
@@ -1161,6 +1423,115 @@ function dlMergeCsv(){
   saveFile("邮件合并数据.csv", csv);
 }
 
+/* ============================================================ Gmail 发送 */
+const gmail={token:null, email:"", tokenClient:null};
+function loadGis(){ if(window.google && google.accounts) return Promise.resolve(true);
+  return new Promise(res=>{ const s=document.createElement("script");
+    s.src="https://accounts.google.com/gsi/client";
+    s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); });
+}
+function renderGmailState(){
+  $("#gmailState").textContent = gmail.token? ("已连接："+(gmail.email||"Gmail")) : "未连接";
+  $("#gmailSignout").style.display = gmail.token? "":"none";
+}
+async function gmailAuth(){
+  const cid=$("#gmailCID").value.trim();
+  if(!cid){ toast("先按上方说明配置并填入 Client ID"); return; }
+  try{ localStorage.setItem("mockOpsGmailCID", cid); }catch(e){}
+  if(!await loadGis()){ toast("无法加载 Google 登录组件 — 请在公网版链接里使用此功能"); return; }
+  try{
+    gmail.tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: cid,
+      scope: "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email",
+      callback: async resp=>{
+        if(resp.error){ toast("授权失败："+resp.error); return; }
+        gmail.token = resp.access_token;
+        try{ const u = await fetch("https://www.googleapis.com/oauth2/v3/userinfo",
+          {headers:{Authorization:"Bearer "+gmail.token}}).then(r=>r.json());
+          gmail.email = u.email||""; }catch(e){}
+        renderGmailState(); toast("已连接 "+(gmail.email||"Gmail"));
+      },
+    });
+    gmail.tokenClient.requestAccessToken({prompt: gmail.token? "" : "consent"});
+  }catch(e){ toast("初始化失败："+e.message); }
+}
+function b64u8(str){ return btoa(unescape(encodeURIComponent(str))); }
+function buildMime(to, subject, html){
+  const raw = [
+    "To: "+to,
+    "Subject: =?UTF-8?B?"+b64u8(subject)+"?=",
+    "MIME-Version: 1.0",
+    'Content-Type: text/html; charset="UTF-8"',
+    "Content-Transfer-Encoding: base64",
+    "",
+    b64u8(html),
+  ].join("\r\n");
+  return b64u8(raw).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+async function gmailSend(to, subject, html){
+  const r=await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{
+    method:"POST",
+    headers:{Authorization:"Bearer "+gmail.token, "Content-Type":"application/json"},
+    body: JSON.stringify({raw: buildMime(to, subject, html)})});
+  if(!r.ok){ const t=await r.text().catch(()=>""); throw new Error("HTTP "+r.status+"："+t.slice(0,120)); }
+  return r.json();
+}
+let batchAbort=false, batchRunning=false;
+function subjFor(tpl, stu){
+  return String(tpl||"邮件").split("{exam}").join(cfg.examName||"").split("{name}").join(stu.name||"");
+}
+function openSendModal(kind, intro, items){
+  $("#sendTitle").textContent=kind;
+  $("#sendIntro").textContent=intro;
+  $("#sendBar").style.width="0"; $("#sendStat").textContent=""; $("#sendLog").innerHTML="";
+  $("#sendStart").disabled=false; $("#sendStart").style.display="";
+  $("#sendStart").onclick=()=>{ $("#sendStart").disabled=true; runBatch(items).finally(()=>{ $("#sendStart").style.display="none"; }); };
+  $("#sendModal").hidden=false;
+}
+async function runBatch(items){
+  batchAbort=false; batchRunning=true;
+  const total=items.length; let ok=0, fail=0;
+  for(let i=0;i<total;i++){
+    if(batchAbort) break;
+    const it=items[i];
+    $("#sendStat").textContent=`发送中 ${i+1} / ${total} — ${it.stu.name}`;
+    $("#sendBar").style.width=Math.round(i/total*100)+"%";
+    try{ await gmailSend(it.to, it.subject, it.html); ok++; }
+    catch(e){
+      fail++;
+      $("#sendLog").innerHTML+=`<div class="note warn">发送失败：${esc(it.stu.name)}（${esc(it.to)}）— ${esc(e.message)}</div>`;
+      if(String(e.message).startsWith("HTTP 401")){
+        $("#sendLog").innerHTML+='<div class="note warn">授权已过期：请关闭本窗口，重新点「授权 / 登录」，再发送一次（已发过的不会重复，剩余的重新群发即可）。</div>';
+        break;
+      }
+    }
+    await new Promise(r=>setTimeout(r, 700));
+  }
+  batchRunning=false;
+  $("#sendBar").style.width="100%";
+  $("#sendStat").textContent=`完成：成功 ${ok} 封，失败 ${fail} 封${batchAbort?"（已手动停止）":""}`;
+}
+function batchSlips(){
+  if(!gmail.token){ toast("先到「考试设置 → 邮件发送」授权 Gmail"); return; }
+  const P=state.post; if(!P.ready){ toast("还没有成绩"); return; }
+  const all=[...P.scored, ...P.absent];
+  const items=all.filter(s=>s.mail).map(s=>({stu:s, to:s.mail, subject:subjFor(cfg.slipSubject, s), html:slipHtml(s, P)}));
+  const noMail=all.length-items.length;
+  openSendModal("群发查分条",
+    `将从 ${gmail.email||"你的 Gmail"} 向 ${items.length} 名学生的家长邮箱逐一发送查分条`+
+    (noMail? `；另有 ${noMail} 人报名表里没有邮箱，会跳过`:"")+"。点「开始发送」执行。", items);
+}
+function batchReceipts(sess){
+  if(!gmail.token){ toast("先到「考试设置 → 邮件发送」授权 Gmail"); return; }
+  const items=sess.students.filter(s=>s.mail).map(s=>({stu:s, to:s.mail,
+    subject:subjFor(cfg.receiptSubject, s),
+    html:`<div style="font-family:Arial,'PingFang SC',sans-serif;font-size:14px;line-height:1.6">${esc(resolveReceipt(cfg.receiptBody, s, sess)).replace(/\n/g,"<br>")}</div>`}));
+  const noMail=sess.students.length-items.length;
+  openSendModal("群发回执单（"+sess.label+"）",
+    `将从 ${gmail.email||"你的 Gmail"} 向本场 ${items.length} 名学生的家长邮箱发送考位回执`+
+    (noMail? `；${noMail} 人没有邮箱，会跳过`:"")+"。点「开始发送」执行。", items);
+}
+
 /* ============================================================ uploads wiring */
 function wireDrop(dropEl, inputEl, handler){
   dropEl.addEventListener("click",()=>inputEl.click());
@@ -1220,6 +1591,18 @@ initSetup();
 $("#defCap").addEventListener("input",()=>{ cfg.defCap=+$("#defCap").value||20; saveCfg(); rebuildSessions(); renderRooms(); renderSessions(); });
 $("#addRoom").addEventListener("click",()=>{ cfg.rooms.push({name:"",cap:""}); saveCfg(); renderRooms(); });
 $("#slipSearch").addEventListener("input",renderSlipList);
+$("#sendSlips").addEventListener("click", batchSlips);
+$("#gmailAuthBtn").addEventListener("click", gmailAuth);
+$("#gmailSignout").addEventListener("click", ()=>{
+  try{ if(gmail.token && window.google) google.accounts.oauth2.revoke(gmail.token, ()=>{}); }catch(e){}
+  gmail.token=null; gmail.email=""; renderGmailState(); toast("已断开 Gmail");
+});
+try{ $("#gmailCID").value = localStorage.getItem("mockOpsGmailCID")||""; }catch(e){}
+$("#sendStop").addEventListener("click", ()=>{ batchAbort=true; });
+$("#sendCloseBtn").addEventListener("click", ()=>{
+  if(batchRunning){ if(!confirm("正在发送中，关闭将停止剩余发送。确定？")) return; batchAbort=true; }
+  $("#sendModal").hidden=true;
+});
 wireDrop($("#dropRoster"),$("#fileRoster"),handleRosterFiles);
 wireDrop($("#dropScans"),$("#fileScans"),handleScanFiles);
 renderRooms();
@@ -1237,9 +1620,10 @@ function renderArchiveBar(){
     }).join("");
   }).catch(()=>{});
   const st=$("#saveState");
-  if(!storageOk){ st.textContent="⚠ 无法自动保存（浏览器限制），请常用「导出档案」"; }
-  else if(lastSavedAt){ st.textContent="已自动保存 "+lastSavedAt.toTimeString().slice(0,8); }
-  else st.textContent="自动保存开启";
+  if(!storageOk){ st.textContent="⚠ 本浏览器无法保存，请用「导出档案」"; st.style.color="var(--warn)"; }
+  else if(dirty){ st.textContent="有未保存的修改"; st.style.color="var(--warn)"; }
+  else if(lastSavedAt){ st.textContent="已保存 "+lastSavedAt.toTimeString().slice(0,8); st.style.color=""; }
+  else{ st.textContent="未修改"; st.style.color=""; }
 }
 async function loadExam(id){
   const rec=await examStore.get(id); if(!rec) return false;
@@ -1254,11 +1638,22 @@ async function loadExam(id){
   reparseScans();
   refreshSetupUI(); renderRoster();
   if(state.scans.ready && state.students.length){ runPost(); } else hidePost();
+  dirty=false;
   renderArchiveBar();
   return true;
 }
+$("#examSave").addEventListener("click", async ()=>{
+  await saveNow();
+  if(!storageOk){ toast("保存失败：浏览器存储不可用"); return; }
+  // 保存同时刷新全部界面
+  rebuildStudents(); rebuildSessions(); reparseScans();
+  refreshSetupUI(); renderRoster();
+  if(state.scans.ready && state.students.length) runPost(); else hidePost();
+  toast("已保存，界面已刷新");
+});
 $("#examPicker").addEventListener("change", async e=>{
-  clearTimeout(saveTimer); await saveNow(); await loadExam(e.target.value);
+  if(!await confirmIfDirty()){ e.target.value=activeExamId; return; }
+  await loadExam(e.target.value);
 });
 function askName(title, placeholder, initial, okLabel){
   return new Promise(res=>{
@@ -1288,7 +1683,6 @@ function demoPost(){
           P:{key, stats:{avg:+(full*0.55).toFixed(2), median:Math.round(full*0.5*2)/2, max:full, count:120}, cutoffs}};
 }
 $("#previewSlip").addEventListener("click", ()=>{
-  clearTimeout(saveTimer); saveNow();
   let html, note;
   if(state.post.ready && state.post.scored.length){
     const stu=state.post.scored[0];
@@ -1303,6 +1697,17 @@ $("#previewSlip").addEventListener("click", ()=>{
   $("#previewNote").textContent=note;
   $("#previewModal").hidden=false;
 });
+$("#previewReceipt").addEventListener("click", ()=>{
+  let sess = state.sessions[state.activeSession];
+  let stu = sess && sess.students[0];
+  if(!sess || !stu){
+    sess = {label:"2026-10-01", times:{signin:"06:45-07:05 PM", start:"07:15 PM", end:"08:30 PM", pickup:"08:35 PM"}};
+    stu = {name:"Alex Wang", room:"101", seat:"101-01"};
+  }
+  $("#previewBody").innerHTML = receiptHtml(stu, sess).replace('class="p-receipt"','class="p-receipt" style="border:none;height:auto"');
+  $("#previewNote").textContent = state.sessions.length? "用第一位学生（"+stu.name+"）预览，占位符已替换成实际考位。" : "还没上传报名表，用演示学生预览。";
+  $("#previewModal").hidden=false;
+});
 $("#previewClose").addEventListener("click",()=>{ $("#previewModal").hidden=true; });
 $("#previewModal").addEventListener("click",e=>{ if(e.target.id==="previewModal") $("#previewModal").hidden=true; });
 
@@ -1310,7 +1715,7 @@ $("#examNew").addEventListener("click", async ()=>{
   const today=new Date(); const defName="新考试 "+(today.getMonth()+1)+"/"+today.getDate();
   const typed=await askName("新考试的名称（直接输入，回车确认）", "例：August 2026 AMC 10 Mock", "", "创建");
   if(typed===null) return;
-  clearTimeout(saveTimer); await saveNow();
+  if(!await confirmIfDirty()) return;
   const nm=String(typed).trim()||defName;
   const rec=newExamRecord(nm); await examStore.put(rec); await loadExam(rec.id);
   $$(".tabs button")[0].click(); toast("已创建「"+nm+"」");
@@ -1330,7 +1735,6 @@ $("#examDelete").addEventListener("click", async ()=>{
   await loadExam(rest[0].id); toast("已删除");
 });
 $("#examExport").addEventListener("click", async ()=>{
-  clearTimeout(saveTimer); await saveNow();
   const payload=JSON.stringify({app:"mock-ops-desk", version:1, exportedAt:new Date().toISOString(), exam:currentRecord()});
   const safe=(cfg.examName||"考试").replace(/[\\/:*?"<>|]/g,"_").slice(0,60);
   saveFile("考试档案_"+safe+".json", payload);
@@ -1342,7 +1746,7 @@ $("#fileArchive").addEventListener("change", async ()=>{
     const obj=JSON.parse(await file.text());
     const rec=obj && obj.exam;
     if(!rec || !rec.cfg) throw new Error("这不是本工具导出的考试档案文件");
-    clearTimeout(saveTimer); await saveNow();
+    if(!await confirmIfDirty()) return;
     rec.id="ex_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
     rec.updatedAt=Date.now(); rec.createdAt=rec.createdAt||Date.now();
     await examStore.put(rec); await loadExam(rec.id);

@@ -291,6 +291,14 @@ table.ui tr:hover td{background:var(--panel2)}
             <option value="0">按全空题给分</option>
           </select>
         </div>
+        <div class="field"><label for="binWidth">分布图档宽</label>
+          <select id="binWidth" style="width:150px">
+            <option value="auto">自动（推荐）</option>
+            <option value="5">每 5 分一段</option>
+            <option value="10">每 10 分一段</option>
+            <option value="20">每 20 分一段</option>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -624,7 +632,7 @@ const DEFAULT_CFG = {
   examName:"May 2026 AMC 10 Mock Exam",
   preset:"amc1012",
   key:"EAEDB DCCBD BADBC CDBCA CACDD",
-  ptC:6, ptB:1.5, ptW:0, blankAbsent:"1",
+  ptC:6, ptB:1.5, ptW:0, blankAbsent:"1", binWidth:"auto",
   cutoffs:[
     {name:"Distinguished Honor Roll", mode:"auto", pct:1, manual:""},
     {name:"Distinction", mode:"auto", pct:10, manual:""},
@@ -665,6 +673,7 @@ function bindCfgInput(id, prop, isNum){
 function refreshSetupUI(){
   for(const b of CFG_BINDINGS) $("#"+b.id).value = cfg[b.prop];
   $("#blankAbsent").value = cfg.blankAbsent;
+  $("#binWidth").value = cfg.binWidth||"auto";
   $("#preset").value = cfg.preset||"custom";
   $("#defCap").value = cfg.defCap;
   $("#keyCount").textContent = keyLetters().length;
@@ -702,6 +711,8 @@ function initSetup(){
   window.__bcState=bcState; bcState();
   const bl=$("#blankAbsent"); bl.value=cfg.blankAbsent;
   bl.addEventListener("change",()=>{cfg.blankAbsent=bl.value; saveCfg(); afterCfgChange();});
+  const bw=$("#binWidth"); bw.value=cfg.binWidth||"auto";
+  bw.addEventListener("change",()=>{cfg.binWidth=bw.value; saveCfg(); afterCfgChange();});
   const pr=$("#preset"); pr.value=cfg.preset||"custom";
   pr.addEventListener("change",()=>{
     cfg.preset=pr.value;
@@ -1113,7 +1124,7 @@ function renderPostRosterState(){
 /* ============================================================ score distribution */
 function computeDist(P){
   const full = P.key.length * (+cfg.ptC || 6);
-  const binW = full > 60 ? 10 : 5;
+  const binW = cfg.binWidth && cfg.binWidth !== "auto" ? +cfg.binWidth : (full > 60 ? 10 : 5);
   const nBins = Math.ceil(full / binW) || 1;
   const bins = Array.from({length:nBins}, (_,i)=>({lo:i*binW, hi:Math.min((i+1)*binW, full), count:0}));
   for(const s of P.scored){

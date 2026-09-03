@@ -208,6 +208,7 @@ table.ui tr:hover td{background:var(--panel2)}
   .p-card .idgrid{position:absolute;top:0.12in;right:0.28in;border:3px solid #000;width:3.15in;height:3.55in;display:flex}
   .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.07in 0;font-size:9.5pt;color:#666;font-family:Arial}
   .p-card .idcol+.idcol{border-left:1px solid #bbb}
+  .p-card .idfill{background:#000;color:#fff;border-radius:0.05in;width:0.26in;text-align:center;font-weight:700}
   .p-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px}
   table.p-meta,table.p-sign{border-collapse:collapse;width:100%}
   table.p-meta td,table.p-sign td,table.p-sign th{border:1px solid #444;padding:6px 9px;font-size:13px}
@@ -405,8 +406,8 @@ table.ui tr:hover td{background:var(--panel2)}
         <input type="file" id="fileBarcode" accept="image/*" style="display:none">
       </div>
       <div class="row" style="margin-top:12px">
-        <button class="btn primary" id="printCard">打印答题卡</button>
-        <span class="chip">打印时选择需要的份数即可</span>
+        <button class="btn primary" id="printCard">打印空白答题卡</button>
+        <span class="chip">每生预涂学号的版本在下方「生成材料」里，按场次打印</span>
       </div>
     </div>
 
@@ -1083,6 +1084,7 @@ function renderSessions(){
   const btns=document.createElement("div"); btns.className="row"; btns.style.marginTop="16px";
   btns.innerHTML=`<button class="btn primary" id="printStk">打印座位贴</button>
     <button class="btn primary" id="printSgn">打印签到表</button>
+    <button class="btn" id="printCards">打印答题卡（每生预涂学号）</button>
     <button class="btn" id="printRcp">打印全部回执单</button>
     <button class="btn" id="sendRcp">Gmail 群发回执单</button>
     <button class="btn" id="dlRoomX">下载 考场安排.xlsx</button>
@@ -1090,6 +1092,10 @@ function renderSessions(){
   area.appendChild(btns);
   $("#printStk").addEventListener("click",()=>printHtml(buildStickers(sess)));
   $("#printSgn").addEventListener("click",()=>printHtml(buildSignin(sess)));
+  $("#printCards").addEventListener("click",()=>{
+    if(!cfg.cardBarcode && !confirm("还没上传条码图，打印出的答题卡扫卡系统可能无法识别。仍要打印吗？")) return;
+    printHtml(buildAllCards(sess));
+  });
   $("#printRcp").addEventListener("click",()=>printHtml(buildReceipts(sess)));
   $("#sendRcp").addEventListener("click",()=>batchReceipts(sess));
   $("#dlRoomX").addEventListener("click",()=>dlRoomXlsx(sess));
@@ -1218,7 +1224,7 @@ function buildStickers(sess){
 }
 
 /* ---------- 答题卡（严格按原版版式） ---------- */
-function buildAnswerCard(){
+function buildAnswerCard(stu){
   const key = keyLetters() || "EAEDBDCCBDBADBCCDBCACACDD";
   const n = key.length;
   const title = cfg.cardTitle || cfg.examName || "Mock Exam";
@@ -1231,18 +1237,31 @@ function buildAnswerCard(){
     qs.map(q=>`<div class="qrow"><span class="qnum">${q}</span>`+
       ["A","B","C","D","E"].map(L=>`<span class="bub">${L}</span>`).join("")+
     `</div>`).join("")+`</div>`).join("");
-  const idcols = Array.from({length:7},()=>`<div class="idcol">`+
-    Array.from({length:10},(_,d)=>`<span>${d}</span>`).join("")+`</div>`).join("");
+  // 每生预涂：7 位学号，右对齐填入 7 列，命中的数字整格涂黑
+  let digits = null;
+  if(stu){ const idc = String(stu.id||"").replace(/\D/g,""); digits = idc.slice(-7).padStart(7," ").split(""); }
+  const idcols = Array.from({length:7},(_,col)=>`<div class="idcol">`+
+    Array.from({length:10},(_,d)=>{
+      const hit = digits && digits[col] === String(d);
+      return `<span${hit? ' class="idfill"':''}>${d}</span>`;
+    }).join("")+`</div>`).join("");
+  const stuLine = stu
+    ? `
+Name: ${stu.name}      Student ID: ${stu.id}      Seat: ${stu.seat||""}`
+    : "";
   return `<div class="p-card">
     <span class="corner c-tl"></span><span class="corner c-tr"></span>
     <span class="corner c-bl"></span><span class="corner c-br"></span>
     <div class="cardtitle">${esc(title)}</div>
     <div class="barcode">${barcode}</div>
     <div class="cardinfo">${esc(cfg.cardInfo1||"")}
-${esc(cfg.cardInfo2||"")}</div>
+${esc(cfg.cardInfo2||"")}${esc(stuLine)}</div>
     <div class="cardbox">${qcols}<div class="idgrid">${idcols}</div></div>
     <div class="barcode barcode-bottom">${barcode}</div>
   </div>`;
+}
+function buildAllCards(sess){
+  return sess.students.map(s=>buildAnswerCard(s)).join("");
 }
 
 /* ---------- 回执单 ---------- */
@@ -1345,6 +1364,7 @@ const STANDALONE_CSS = `
   .p-card .idgrid{position:absolute;top:0.12in;right:0.28in;border:3px solid #000;width:3.15in;height:3.55in;display:flex}
   .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.07in 0;font-size:9.5pt;color:#666;font-family:Arial}
   .p-card .idcol+.idcol{border-left:1px solid #bbb}
+  .p-card .idfill{background:#000;color:#fff;border-radius:0.05in;width:0.26in;text-align:center;font-weight:700}
   .p-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px}
   table.p-meta,table.p-sign{border-collapse:collapse;width:100%}
   table.p-meta td,table.p-sign td,table.p-sign th{border:1px solid #444;padding:6px 9px;font-size:13px}

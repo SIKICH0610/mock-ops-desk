@@ -191,23 +191,23 @@ table.ui tr:hover td{background:var(--panel2)}
   td.stkc .l4{font-size:17px;font-weight:700;font-family:var(--mono);letter-spacing:.05em}
   tr{break-inside:avoid}
   .p-receipt{height:3.55in;padding:0.35in 0.55in 14px;border-bottom:1.5px dashed #666;break-inside:avoid;box-sizing:border-box}
-  .p-card{position:relative;height:11in;padding:0.4in 0.45in 0;box-sizing:border-box;page-break-after:always}
+  .p-card{position:relative;height:11in;padding:0.24in 0.45in 0;box-sizing:border-box;page-break-after:always}
   .p-card:last-child{page-break-after:auto}
   .p-card .corner{position:absolute;width:0.27in;height:0.27in;background:#000}
-  .p-card .c-tl{top:0.3in;left:0.3in}.p-card .c-tr{top:0.3in;right:0.3in}.p-card .c-bl{bottom:0.3in;left:0.3in}.p-card .c-br{bottom:0.3in;right:0.3in}
-  .p-card .cardtitle{text-align:center;font-size:14.5pt;font-weight:600;margin:0.02in 0 0;font-family:Calibri,Arial,sans-serif}
+  .p-card .c-tl{top:0.17in;left:0.22in}.p-card .c-tr{top:0.17in;right:0.22in}.p-card .c-bl{bottom:0.14in;left:0.22in}.p-card .c-br{bottom:0.14in;right:0.22in}
+  .p-card .cardtitle{text-align:center;font-size:14.5pt;font-weight:400;margin:0.02in 0 0;font-family:Calibri,Arial,sans-serif}
   .p-card .barcode{display:block;height:0.44in;margin:0.3in 0 0 0.38in}
   .p-card .barcode img{height:100%;display:block}
-  .p-card .barcode-bottom{position:absolute;bottom:0.33in;left:50%;transform:translateX(-50%);margin:0}
+  .p-card .barcode-bottom{position:absolute;bottom:0.09in;left:50%;transform:translateX(-50%);margin:0}
   .p-card .barcode-ph{width:3.6in;height:0.44in;border:1.5px dashed #999;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#888}
   .p-card .cardinfo{font-size:12.5pt;margin:0.3in 0 0 0.38in;line-height:2.3;white-space:pre-wrap;font-family:Calibri,Arial,sans-serif}
-  .p-card .cardbox{border:2px solid #000;margin:0.24in 0.12in 0;height:7.0in;position:relative}
+  .p-card .cardbox{border:2px solid #000;margin:0.22in 0.12in 0;height:7.85in;position:relative}
   .p-card .qcol{position:absolute;top:0.16in;bottom:0.16in;display:flex;flex-direction:column;justify-content:space-between}
   .p-card .qrow{display:flex;align-items:center;gap:0.05in}
   .p-card .qnum{width:0.3in;text-align:right;font-size:7pt;color:#222;font-family:Arial;padding-right:0.04in}
   .p-card .bub{width:0.185in;height:0.185in;border:1.3px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7pt;color:#222;font-family:'Times New Roman',serif}
-  .p-card .idgrid{position:absolute;top:0;right:0;border:1.5px solid #000;width:2.0in;height:2.0in;display:flex}
-  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.03in 0;font-family:'Times New Roman',serif}
+  .p-card .idgrid{position:absolute;top:0;right:0;border:2.5px solid #000;width:2.0in;height:1.82in;display:flex}
+  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.018in 0;font-family:'Times New Roman',serif}
   .p-card .idcol span{width:0.165in;height:0.165in;border:1.2px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:6.5pt;color:#222}
   .p-card .idcol+.idcol{border-left:1px solid #000}
   .p-card .idcol span.idfill{background:#000;color:#fff;font-weight:700}
@@ -1426,23 +1426,23 @@ const STANDALONE_CSS = `
   td.stkc .l4{font-size:17px;font-weight:700;font-family:Menlo,monospace;letter-spacing:.05em}
   tr{break-inside:avoid}
   .p-receipt{height:3.55in;padding:0.35in 0.55in 14px;border-bottom:1.5px dashed #666;break-inside:avoid;box-sizing:border-box}
-  .p-card{position:relative;height:11in;padding:0.4in 0.45in 0;box-sizing:border-box;page-break-after:always}
+  .p-card{position:relative;height:11in;padding:0.24in 0.45in 0;box-sizing:border-box;page-break-after:always}
   .p-card:last-child{page-break-after:auto}
   .p-card .corner{position:absolute;width:0.27in;height:0.27in;background:#000}
-  .p-card .c-tl{top:0.3in;left:0.3in}.p-card .c-tr{top:0.3in;right:0.3in}.p-card .c-bl{bottom:0.3in;left:0.3in}.p-card .c-br{bottom:0.3in;right:0.3in}
-  .p-card .cardtitle{text-align:center;font-size:14.5pt;font-weight:600;margin:0.02in 0 0;font-family:Calibri,Arial,sans-serif}
+  .p-card .c-tl{top:0.17in;left:0.22in}.p-card .c-tr{top:0.17in;right:0.22in}.p-card .c-bl{bottom:0.14in;left:0.22in}.p-card .c-br{bottom:0.14in;right:0.22in}
+  .p-card .cardtitle{text-align:center;font-size:14.5pt;font-weight:400;margin:0.02in 0 0;font-family:Calibri,Arial,sans-serif}
   .p-card .barcode{display:block;height:0.44in;margin:0.3in 0 0 0.38in}
   .p-card .barcode img{height:100%;display:block}
-  .p-card .barcode-bottom{position:absolute;bottom:0.33in;left:50%;transform:translateX(-50%);margin:0}
+  .p-card .barcode-bottom{position:absolute;bottom:0.09in;left:50%;transform:translateX(-50%);margin:0}
   .p-card .barcode-ph{width:3.6in;height:0.44in;border:1.5px dashed #999;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#888}
   .p-card .cardinfo{font-size:12.5pt;margin:0.3in 0 0 0.38in;line-height:2.3;white-space:pre-wrap;font-family:Calibri,Arial,sans-serif}
-  .p-card .cardbox{border:2px solid #000;margin:0.24in 0.12in 0;height:7.0in;position:relative}
+  .p-card .cardbox{border:2px solid #000;margin:0.22in 0.12in 0;height:7.85in;position:relative}
   .p-card .qcol{position:absolute;top:0.16in;bottom:0.16in;display:flex;flex-direction:column;justify-content:space-between}
   .p-card .qrow{display:flex;align-items:center;gap:0.05in}
   .p-card .qnum{width:0.3in;text-align:right;font-size:7pt;color:#222;font-family:Arial;padding-right:0.04in}
   .p-card .bub{width:0.185in;height:0.185in;border:1.3px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7pt;color:#222;font-family:'Times New Roman',serif}
-  .p-card .idgrid{position:absolute;top:0;right:0;border:1.5px solid #000;width:2.0in;height:2.0in;display:flex}
-  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.03in 0;font-family:'Times New Roman',serif}
+  .p-card .idgrid{position:absolute;top:0;right:0;border:2.5px solid #000;width:2.0in;height:1.82in;display:flex}
+  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.018in 0;font-family:'Times New Roman',serif}
   .p-card .idcol span{width:0.165in;height:0.165in;border:1.2px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:6.5pt;color:#222}
   .p-card .idcol+.idcol{border-left:1px solid #000}
   .p-card .idcol span.idfill{background:#000;color:#fff;font-weight:700}

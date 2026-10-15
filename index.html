@@ -207,9 +207,10 @@ table.ui tr:hover td{background:var(--panel2)}
   .p-card .qnum{width:0.34in;text-align:right;font-size:8pt;color:#333;font-family:Arial}
   .p-card .bub{width:0.2in;height:0.2in;border:1.6px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7.5pt;color:#444}
   .p-card .idgrid{position:absolute;top:0.12in;right:0.28in;border:3px solid #000;width:3.15in;height:3.55in;display:flex}
-  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.07in 0;font-size:9.5pt;color:#666;font-family:Arial}
+  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.07in 0;font-family:Arial}
+  .p-card .idcol span{width:0.2in;height:0.2in;border:1.6px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7.5pt;color:#444}
   .p-card .idcol+.idcol{border-left:1px solid #bbb}
-  .p-card .idfill{background:#000;color:#fff;border-radius:0.05in;width:0.26in;text-align:center;font-weight:700}
+  .p-card .idcol span.idfill{background:#000;color:#fff;font-weight:700}
   .p-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px}
   table.p-meta,table.p-sign{border-collapse:collapse;width:100%}
   table.p-meta td,table.p-sign td,table.p-sign th{border:1px solid #444;padding:6px 9px;font-size:13px}
@@ -335,15 +336,27 @@ table.ui tr:hover td{background:var(--panel2)}
     </div>
 
     <div class="card">
-      <h2>邮件发送（Gmail 授权）</h2>
-      <p class="hint">连接自己的 Gmail 后，可在「考前」一键群发回执单、在「考后」一键群发查分条（逐个学生单独成信）。授权在 Google 官方弹窗里完成，本工具碰不到你的密码；授权只在当前页面会话有效。<b>首次使用需一次性配置 Client ID</b>：打开 console.cloud.google.com → 建项目 → 「OAuth consent screen」选 External 并把自己的邮箱加为 Test user → 「Credentials → Create credentials → OAuth client ID → Web application」，Authorized JavaScript origins 填 <span class="mono">https://sikich0610.github.io</span> → 把生成的 Client ID 粘到下面（只需配一次，之后所有考试通用）。</p>
+      <h2>邮件发送（Outlook / Gmail 授权）</h2>
+      <p class="hint">连接公司或个人邮箱后，可在「考前」一键群发回执单、「考后」一键群发查分条（逐个学生单独成信），以及「考前 ⑥」一封信 BCC 直接发送。授权都在 Microsoft / Google 官方弹窗里完成，本工具碰不到你的密码；授权只在当前页面会话有效。两边都连接时，用<b>最后连接</b>的那个发送。</p>
+
+      <p class="hint" style="margin-top:4px"><b>Outlook / Microsoft 365（公司邮箱）</b> — 首次使用需一次性注册应用（全公司配一次即可）：打开 portal.azure.com → 「Microsoft Entra ID → App registrations → New registration」→ 名称随意，账户类型选「本组织目录」→ Redirect URI 类型选 <b>Single-page application (SPA)</b>、地址填 <span class="mono">https://sikich0610.github.io</span> → 创建后把「Application (client) ID」粘到下面；再到「API permissions → Add a permission → Microsoft Graph → Delegated」勾选 <span class="mono">Mail.Send</span>。若公司限制了用户自行同意，请 IT 管理员在该页点一次「Grant admin consent」。</p>
+      <div class="row" style="align-items:flex-end">
+        <div class="field" style="flex:1;min-width:300px"><label for="msCID">Microsoft Application (client) ID</label>
+          <input type="text" id="msCID" class="mono" placeholder="例：11111111-2222-3333-4444-555555555555"></div>
+        <button class="btn primary" id="msAuthBtn">授权 / 登录 Outlook</button>
+        <span class="chip" id="msState">未连接</span>
+        <button class="btn small" id="msSignout" style="display:none">断开</button>
+      </div>
+
+      <p class="hint" style="margin-top:14px"><b>Gmail</b> — 首次使用需一次性配置 Client ID：打开 console.cloud.google.com → 建项目 → 「OAuth consent screen」选 External 并把自己的邮箱加为 Test user → 「Credentials → Create credentials → OAuth client ID → Web application」，Authorized JavaScript origins 填 <span class="mono">https://sikich0610.github.io</span> → 把生成的 Client ID 粘到下面（只需配一次，之后所有考试通用）。</p>
       <div class="row" style="align-items:flex-end">
         <div class="field" style="flex:1;min-width:300px"><label for="gmailCID">Google OAuth Client ID</label>
           <input type="text" id="gmailCID" class="mono" placeholder="例：1234567890-abc.apps.googleusercontent.com"></div>
-        <button class="btn primary" id="gmailAuthBtn">授权 / 登录</button>
+        <button class="btn primary" id="gmailAuthBtn">授权 / 登录 Gmail</button>
         <span class="chip" id="gmailState">未连接</span>
         <button class="btn small" id="gmailSignout" style="display:none">断开</button>
       </div>
+
       <div class="row" style="margin-top:10px">
         <div class="field" style="flex:1;min-width:280px"><label for="slipSubject">查分条邮件主题 <span class="fh">— {exam} {name} 会自动替换</span></label>
           <input type="text" id="slipSubject"></div>
@@ -423,6 +436,27 @@ table.ui tr:hover td{background:var(--panel2)}
       <p class="hint">时间自动从报名表推算（开考前30~10分钟签到、结束后5分钟接娃），可以直接改。</p>
       <div id="sessionArea"></div>
     </div>
+
+    <div class="card">
+      <h2>⑥ 群发通知（一封信 · 全员密送 BCC）</h2>
+      <p class="hint">把同一封通知发给所有家长：地址全部放在<b>密送（BCC）</b>里，家长之间互相看不到邮箱。「打开 Outlook / Gmail 撰写」<b>不需要任何授权</b>——一键打开已填好密送名单、主题和正文的网页版写信窗口，检查一眼点发送即可（人多时自动分批）；也可以「复制 BCC 名单」粘贴到任何邮箱，或用「考试设置」里已授权的邮箱直接发送（一封信）。写 {exam} 会自动替换成考试名称。</p>
+      <div class="row">
+        <div class="field"><label for="bccScope">发给谁</label>
+          <select id="bccScope" style="min-width:190px"><option value="all">全部学生</option></select></div>
+        <div class="field" style="flex:1;min-width:240px"><label for="bccSubject">邮件主题</label>
+          <input type="text" id="bccSubject"></div>
+        <span class="chip" id="bccCount" style="align-self:center"></span>
+      </div>
+      <div class="field" style="margin-top:10px"><label for="bccBody">正文 <span class="fh">— 会预填进 Gmail 写信窗口，也可以打开后再改</span></label>
+        <textarea id="bccBody" rows="5"></textarea></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="bccOutlook">打开 Outlook 撰写（免授权）</button>
+        <button class="btn" id="bccCompose">打开 Gmail 撰写（免授权）</button>
+        <button class="btn" id="bccCopy">复制 BCC 名单</button>
+        <button class="btn" id="bccSend">用已授权邮箱直接发送</button>
+      </div>
+      <div id="bccBatches" class="chips"></div>
+    </div>
   </section>
 
   <!-- ================= TAB 3 POST ================= -->
@@ -459,7 +493,7 @@ table.ui tr:hover td{background:var(--panel2)}
         <p class="hint">点「复制」得到带表格的富文本，直接粘贴进 Gmail / Outlook 正文；也可以整套打印。</p>
         <div class="row">
           <button class="btn primary" id="printSlips">打印全部小纸条</button>
-          <button class="btn" id="sendSlips">Gmail 群发查分条</button>
+          <button class="btn" id="sendSlips">邮件群发查分条</button>
           <button class="btn" id="dlSlipsHtml">下载打印版（HTML）</button>
         </div>
         <div class="searchbar">
@@ -645,6 +679,8 @@ const DEFAULT_CFG = {
   emBookletLink:"",
   emExtra:"",
   emSign:"Thank you,\nThink Academy",
+  bccSubject:"{exam} - Notice",
+  bccBody:"",
   defCap:20,
   rooms:[{name:"101",cap:""},{name:"103",cap:""},{name:"104",cap:""},{name:"105",cap:""},{name:"106",cap:""},{name:"204",cap:""}],
 };
@@ -695,6 +731,7 @@ function initSetup(){
   bindCfgInput("receiptSubject","receiptSubject"); bindCfgInput("receiptBody","receiptBody");
   bindCfgInput("cardTitle","cardTitle"); bindCfgInput("cardSection","cardSection");
   bindCfgInput("slipSubject","slipSubject");
+  bindCfgInput("bccSubject","bccSubject"); bindCfgInput("bccBody","bccBody");
   const bcState=()=>{ $("#barcodeState").textContent = cfg.cardBarcode? "使用自定义条码":"使用默认条码（5月模板）";
     $("#clearBarcode").style.display = cfg.cardBarcode? "":"none"; };
   $("#upBarcode").addEventListener("click",()=>$("#fileBarcode").click());
@@ -1005,6 +1042,7 @@ function renderRoster(){
   renderMapping();
   renderRooms();
   renderSessions();
+  renderBccScope();
   renderPostRosterState();
 }
 function renderMapping(){
@@ -1095,7 +1133,7 @@ function renderSessions(){
     <button class="btn primary" id="printSgn">打印签到表</button>
     <button class="btn" id="printCards">打印答题卡（每生预涂学号）</button>
     <button class="btn" id="printRcp">打印全部回执单</button>
-    <button class="btn" id="sendRcp">Gmail 群发回执单</button>
+    <button class="btn" id="sendRcp">邮件群发回执单</button>
     <button class="btn" id="dlRoomX">下载 考场安排.xlsx</button>
     <button class="btn" id="dlPreHtml">下载打印版（HTML）</button>`;
   area.appendChild(btns);
@@ -1404,9 +1442,10 @@ const STANDALONE_CSS = `
   .p-card .qnum{width:0.34in;text-align:right;font-size:8pt;color:#333;font-family:Arial}
   .p-card .bub{width:0.2in;height:0.2in;border:1.6px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7.5pt;color:#444}
   .p-card .idgrid{position:absolute;top:0.12in;right:0.28in;border:3px solid #000;width:3.15in;height:3.55in;display:flex}
-  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.07in 0;font-size:9.5pt;color:#666;font-family:Arial}
+  .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.07in 0;font-family:Arial}
+  .p-card .idcol span{width:0.2in;height:0.2in;border:1.6px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7.5pt;color:#444}
   .p-card .idcol+.idcol{border-left:1px solid #bbb}
-  .p-card .idfill{background:#000;color:#fff;border-radius:0.05in;width:0.26in;text-align:center;font-weight:700}
+  .p-card .idcol span.idfill{background:#000;color:#fff;font-weight:700}
   .p-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px}
   table.p-meta,table.p-sign{border-collapse:collapse;width:100%}
   table.p-meta td,table.p-sign td,table.p-sign th{border:1px solid #444;padding:6px 9px;font-size:13px}
@@ -1487,8 +1526,71 @@ function dlMergeCsv(){
   saveFile("邮件合并数据.csv", csv);
 }
 
-/* ============================================================ Gmail 发送 */
+/* ============================================================ 邮件发送（Outlook / Gmail） */
 const gmail={token:null, email:"", tokenClient:null};
+const ms={token:null, email:"", app:null, account:null};
+let mailProvider=null;   // "ms" | "gmail" — 最后成功连接的那个
+function mailReady(){
+  if(mailProvider==="ms" && ms.token) return "ms";
+  if(mailProvider==="gmail" && gmail.token) return "gmail";
+  return ms.token? "ms" : (gmail.token? "gmail" : null);
+}
+function mailFrom(){ const p=mailReady(); return p==="ms"? (ms.email||"Outlook") : p==="gmail"? (gmail.email||"Gmail") : ""; }
+function mailSelf(){ const p=mailReady(); return p==="ms"? ms.email : p==="gmail"? gmail.email : ""; }
+async function mailSend(to, subject, html, inlinePngB64, bcc){
+  return mailReady()==="ms"? graphSend(to, subject, html, inlinePngB64, bcc)
+                           : gmailSend(to, subject, html, inlinePngB64, bcc);
+}
+
+/* ---- Outlook / Microsoft Graph ---- */
+const MS_SCOPES=["Mail.Send","User.Read"];
+function loadMsal(){ if(window.msal && msal.PublicClientApplication) return Promise.resolve(true);
+  return new Promise(res=>{ const s=document.createElement("script");
+    s.src="https://alcdn.msauth.net/browser/3.10.0/js/msal-browser.min.js";
+    s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); });
+}
+function renderMsState(){
+  $("#msState").textContent = ms.token? ("已连接："+(ms.email||"Outlook")) : "未连接";
+  $("#msSignout").style.display = ms.token? "":"none";
+}
+async function msAuth(){
+  const cid=$("#msCID").value.trim();
+  if(!cid){ toast("先按上方说明注册应用并填入 Client ID"); return; }
+  try{ localStorage.setItem("mockOpsMsCID", cid); }catch(e){}
+  if(!await loadMsal()){ toast("无法加载 Microsoft 登录组件 — 请在公网版链接里使用此功能"); return; }
+  try{
+    if(!ms.app){
+      ms.app=new msal.PublicClientApplication({auth:{clientId:cid,
+        authority:"https://login.microsoftonline.com/common", redirectUri: location.origin}});
+      await ms.app.initialize();
+    }
+    const r=await ms.app.loginPopup({scopes:MS_SCOPES, prompt:"select_account"});
+    ms.account=r.account; ms.token=r.accessToken; ms.email=(r.account&&r.account.username)||"";
+    mailProvider="ms";
+    renderMsState(); toast("已连接 "+(ms.email||"Outlook"));
+  }catch(e){ toast("授权失败："+(e.errorMessage||e.message)); }
+}
+async function msToken(){   // 发送前尽量静默续期
+  if(!ms.app||!ms.account) return ms.token;
+  try{ const r=await ms.app.acquireTokenSilent({scopes:MS_SCOPES, account:ms.account}); ms.token=r.accessToken; }catch(e){}
+  return ms.token;
+}
+async function graphSend(to, subject, html, inlinePngB64, bcc){
+  const tok=await msToken();
+  const msg={subject, body:{contentType:"HTML", content:html},
+    toRecipients: to? [{emailAddress:{address:to}}]:[],
+    bccRecipients: (Array.isArray(bcc)? bcc : (bcc? [bcc]:[])).map(a=>({emailAddress:{address:a}}))};
+  if(inlinePngB64) msg.attachments=[{"@odata.type":"#microsoft.graph.fileAttachment",
+    name:"distribution.png", contentType:"image/png", contentBytes:inlinePngB64,
+    contentId:"distchart", isInline:true}];
+  const r=await fetch("https://graph.microsoft.com/v1.0/me/sendMail",{
+    method:"POST", headers:{Authorization:"Bearer "+tok, "Content-Type":"application/json"},
+    body:JSON.stringify({message:msg, saveToSentItems:true})});
+  if(!r.ok){ const t=await r.text().catch(()=>""); throw new Error("HTTP "+r.status+"："+t.slice(0,120)); }
+  return true;
+}
+
+/* ---- Gmail ---- */
 function loadGis(){ if(window.google && google.accounts) return Promise.resolve(true);
   return new Promise(res=>{ const s=document.createElement("script");
     s.src="https://accounts.google.com/gsi/client";
@@ -1513,6 +1615,7 @@ async function gmailAuth(){
         try{ const u = await fetch("https://www.googleapis.com/oauth2/v3/userinfo",
           {headers:{Authorization:"Bearer "+gmail.token}}).then(r=>r.json());
           gmail.email = u.email||""; }catch(e){}
+        mailProvider="gmail";
         renderGmailState(); toast("已连接 "+(gmail.email||"Gmail"));
       },
     });
@@ -1521,14 +1624,16 @@ async function gmailAuth(){
 }
 function b64u8(str){ return btoa(unescape(encodeURIComponent(str))); }
 function wrap76(s){ return s.replace(/(.{76})/g, "$1\r\n"); }
-function buildMime(to, subject, html, inlinePngB64){
+function buildMime(to, subject, html, inlinePngB64, bcc){
+  const hdrs=[];
+  if(to) hdrs.push("To: "+to);
+  if(bcc && bcc.length) hdrs.push("Bcc: "+(Array.isArray(bcc)? bcc.join(",\r\n "): bcc));
+  hdrs.push("Subject: =?UTF-8?B?"+b64u8(subject)+"?=", "MIME-Version: 1.0");
   let raw;
   if(inlinePngB64){
     const B="====mockops" + Date.now().toString(36) + "====";
     raw = [
-      "To: "+to,
-      "Subject: =?UTF-8?B?"+b64u8(subject)+"?=",
-      "MIME-Version: 1.0",
+      ...hdrs,
       'Content-Type: multipart/related; boundary="'+B+'"',
       "",
       "--"+B,
@@ -1547,9 +1652,7 @@ function buildMime(to, subject, html, inlinePngB64){
     ].join("\r\n");
   } else {
     raw = [
-      "To: "+to,
-      "Subject: =?UTF-8?B?"+b64u8(subject)+"?=",
-      "MIME-Version: 1.0",
+      ...hdrs,
       'Content-Type: text/html; charset="UTF-8"',
       "Content-Transfer-Encoding: base64",
       "",
@@ -1558,11 +1661,11 @@ function buildMime(to, subject, html, inlinePngB64){
   }
   return b64u8(raw).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
-async function gmailSend(to, subject, html, inlinePngB64){
+async function gmailSend(to, subject, html, inlinePngB64, bcc){
   const r=await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{
     method:"POST",
     headers:{Authorization:"Bearer "+gmail.token, "Content-Type":"application/json"},
-    body: JSON.stringify({raw: buildMime(to, subject, html, inlinePngB64)})});
+    body: JSON.stringify({raw: buildMime(to, subject, html, inlinePngB64, bcc)})});
   if(!r.ok){ const t=await r.text().catch(()=>""); throw new Error("HTTP "+r.status+"："+t.slice(0,120)); }
   return r.json();
 }
@@ -1586,7 +1689,7 @@ async function runBatch(items){
     const it=items[i];
     $("#sendStat").textContent=`发送中 ${i+1} / ${total} — ${it.stu.name}`;
     $("#sendBar").style.width=Math.round(i/total*100)+"%";
-    try{ await gmailSend(it.to, it.subject, it.html, it.inlinePng); ok++; }
+    try{ await mailSend(it.to, it.subject, it.html, it.inlinePng); ok++; }
     catch(e){
       fail++;
       $("#sendLog").innerHTML+=`<div class="note warn">发送失败：${esc(it.stu.name)}（${esc(it.to)}）— ${esc(e.message)}</div>`;
@@ -1602,7 +1705,7 @@ async function runBatch(items){
   $("#sendStat").textContent=`完成：成功 ${ok} 封，失败 ${fail} 封${batchAbort?"（已手动停止）":""}`;
 }
 async function batchSlips(){
-  if(!gmail.token){ toast("先到「考试设置 → 邮件发送」授权 Gmail"); return; }
+  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook 或 Gmail"); return; }
   const P=state.post; if(!P.ready){ toast("还没有成绩"); return; }
   toast("正在生成每人的分布图…");
   const all=[...P.scored, ...P.absent];
@@ -1616,19 +1719,98 @@ async function batchSlips(){
   }
   const noMail=all.length-items.length;
   openSendModal("群发查分条",
-    `将从 ${gmail.email||"你的 Gmail"} 向 ${items.length} 名学生的家长邮箱逐一发送查分条（含成绩分布图）`+
+    `将从 ${mailFrom()||"你的邮箱"} 向 ${items.length} 名学生的家长邮箱逐一发送查分条（含成绩分布图）`+
     (noMail? `；另有 ${noMail} 人报名表里没有邮箱，会跳过`:"")+"。点「开始发送」执行。", items);
 }
 function batchReceipts(sess){
-  if(!gmail.token){ toast("先到「考试设置 → 邮件发送」授权 Gmail"); return; }
+  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook 或 Gmail"); return; }
   const items=sess.students.filter(s=>s.mail).map(s=>({stu:s, to:s.mail,
     subject:subjFor(cfg.receiptSubject, s),
     html:`<div style="font-family:Arial,'PingFang SC',sans-serif;font-size:14px;line-height:1.6">${esc(resolveReceipt(cfg.receiptBody, s, sess)).replace(/\n/g,"<br>")}</div>`}));
   const noMail=sess.students.length-items.length;
   openSendModal("群发回执单（"+sess.label+"）",
-    `将从 ${gmail.email||"你的 Gmail"} 向本场 ${items.length} 名学生的家长邮箱发送考位回执`+
+    `将从 ${mailFrom()||"你的邮箱"} 向本场 ${items.length} 名学生的家长邮箱发送考位回执`+
     (noMail? `；${noMail} 人没有邮箱，会跳过`:"")+"。点「开始发送」执行。", items);
 }
+
+/* ============================================================ 群发通知（一封信 · BCC） */
+const BCC_CHUNK=50;   // 每个 Gmail 撰写窗口最多预填的 BCC 数（防 URL 过长）
+function bccText(t){ return String(t||"").split("{exam}").join(cfg.examName||""); }
+function bccRecipients(){
+  const scope=$("#bccScope").value||"all";
+  const stus = scope==="all" ? state.students
+    : ((state.sessions.find(s=>String(s.classId)===scope)||{}).students||[]);
+  const seen=new Set(); const mails=[];
+  for(const s of stus){
+    const m=String(s.mail||"").trim();
+    if(m && m.includes("@") && !seen.has(m.toLowerCase())){ seen.add(m.toLowerCase()); mails.push(m); }
+  }
+  return {mails, noMail: stus.filter(s=>!String(s.mail||"").trim()).length};
+}
+function renderBccScope(){
+  const sel=$("#bccScope"); const cur=sel.value||"all";
+  sel.innerHTML=`<option value="all">全部学生（${state.students.length}人）</option>`+
+    state.sessions.map(s=>`<option value="${esc(s.classId)}">场次 ${esc(s.label)}（${s.students.length}人）</option>`).join("");
+  sel.value=[...sel.options].some(o=>o.value===cur)? cur : "all";
+  updateBccCount();
+}
+function updateBccCount(){
+  const r=bccRecipients();
+  $("#bccCount").textContent = r.mails.length
+    ? r.mails.length+" 个邮箱（已去重）"+(r.noMail? "，"+r.noMail+" 人无邮箱":"")
+    : "暂无邮箱 — 先上传报名表";
+  $("#bccBatches").innerHTML="";
+}
+function bccComposeUrl(mails){
+  return "https://mail.google.com/mail/?view=cm&fs=1"+
+    "&bcc="+encodeURIComponent(mails.join(","))+
+    "&su="+encodeURIComponent(bccText(cfg.bccSubject))+
+    "&body="+encodeURIComponent(bccText(cfg.bccBody));
+}
+function outlookComposeUrl(mails){
+  return "https://outlook.office.com/mail/deeplink/compose"+
+    "?bcc="+encodeURIComponent(mails.join(","))+
+    "&subject="+encodeURIComponent(bccText(cfg.bccSubject))+
+    "&body="+encodeURIComponent(bccText(cfg.bccBody));
+}
+function openComposeBatches(urlFn, label){
+  const {mails}=bccRecipients();
+  if(!mails.length){ toast("没有可用邮箱 — 先上传报名表"); return; }
+  const chunks=[]; for(let i=0;i<mails.length;i+=BCC_CHUNK) chunks.push(mails.slice(i,i+BCC_CHUNK));
+  window.open(urlFn(chunks[0]), "_blank");
+  const box=$("#bccBatches"); box.innerHTML="";
+  if(chunks.length>1){
+    toast("人数较多：已打开第 1 批，剩余批次点下面的按钮逐个打开");
+    chunks.forEach((ck,i)=>{
+      const b=document.createElement("button"); b.className="btn small";
+      b.textContent=`第 ${i+1} 批（${ck.length} 个）${i===0?" ✓":""}`;
+      b.addEventListener("click",()=>{ window.open(urlFn(ck),"_blank"); b.textContent=`第 ${i+1} 批（${ck.length} 个） ✓`; });
+      box.appendChild(b);
+    });
+  } else toast("已打开 "+label+" 写信窗口（BCC "+mails.length+" 人），检查后点发送");
+}
+$("#bccScope").addEventListener("change", updateBccCount);
+$("#bccOutlook").addEventListener("click", ()=>openComposeBatches(outlookComposeUrl, "Outlook"));
+$("#bccCompose").addEventListener("click", ()=>openComposeBatches(bccComposeUrl, "Gmail"));
+$("#bccCopy").addEventListener("click", async ()=>{
+  const {mails}=bccRecipients();
+  if(!mails.length){ toast("没有可用邮箱 — 先上传报名表"); return; }
+  try{ await navigator.clipboard.writeText(mails.join(", ")); toast("已复制 "+mails.length+" 个邮箱，粘贴到邮件的 BCC/密送栏"); }
+  catch(e){ toast("复制失败："+e.message); }
+});
+$("#bccSend").addEventListener("click", async ()=>{
+  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook 或 Gmail"); return; }
+  const {mails}=bccRecipients();
+  if(!mails.length){ toast("没有可用邮箱 — 先上传报名表"); return; }
+  const body=bccText(cfg.bccBody);
+  if(!body.trim()){ toast("正文是空的 — 先写通知内容"); return; }
+  if(!confirm("用 "+(mailSelf()||mailFrom())+" 发送一封邮件，密送（BCC）给 "+mails.length+" 个邮箱？")) return;
+  const html=`<div style="font-family:Arial,'PingFang SC',sans-serif;font-size:14px;line-height:1.6">${esc(body).replace(/\n/g,"<br>")}</div>`;
+  try{
+    await mailSend(mailSelf()||"", bccText(cfg.bccSubject)||cfg.examName||"Notice", html, null, mails);
+    toast("已发送：1 封邮件，BCC "+mails.length+" 人");
+  }catch(e){ toast("发送失败："+e.message); }
+});
 
 /* ============================================================ uploads wiring */
 function wireDrop(dropEl, inputEl, handler){
@@ -1693,9 +1875,18 @@ $("#sendSlips").addEventListener("click", batchSlips);
 $("#gmailAuthBtn").addEventListener("click", gmailAuth);
 $("#gmailSignout").addEventListener("click", ()=>{
   try{ if(gmail.token && window.google) google.accounts.oauth2.revoke(gmail.token, ()=>{}); }catch(e){}
-  gmail.token=null; gmail.email=""; renderGmailState(); toast("已断开 Gmail");
+  gmail.token=null; gmail.email="";
+  if(mailProvider==="gmail") mailProvider = ms.token? "ms" : null;
+  renderGmailState(); toast("已断开 Gmail");
 });
 try{ $("#gmailCID").value = localStorage.getItem("mockOpsGmailCID")||""; }catch(e){}
+$("#msAuthBtn").addEventListener("click", msAuth);
+$("#msSignout").addEventListener("click", ()=>{
+  ms.token=null; ms.email=""; ms.account=null;
+  if(mailProvider==="ms") mailProvider = gmail.token? "gmail" : null;
+  renderMsState(); toast("已断开 Outlook");
+});
+try{ $("#msCID").value = localStorage.getItem("mockOpsMsCID")||""; }catch(e){}
 $("#sendStop").addEventListener("click", ()=>{ batchAbort=true; });
 $("#sendCloseBtn").addEventListener("click", ()=>{
   if(batchRunning){ if(!confirm("正在发送中，关闭将停止剩余发送。确定？")) return; batchAbort=true; }

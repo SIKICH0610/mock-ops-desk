@@ -934,7 +934,13 @@ function rebuildSessions(){
   const groups=new Map();  // 分场：优先按报名的「首节课时间」（日期+时刻），其次首节课次日期，再次 classId
   for(const s of state.students){
     let k=String(s.flt||"").trim();
-    if(!k){ const m=/(\d{4}-\d{2}-\d{2})/.exec(s.lesson||""); k = m? m[1] : (s.classId||"default"); }
+    if(!k){   // 没有首节课时间列时：日期 + 从上课时间描述里解析的开考时刻（24h），保证同日不同时段分开
+      const m=/(\d{4}-\d{2}-\d{2})/.exec(s.lesson||"");
+      const d=m? m[1] : "";
+      const t=/(\d{1,2}):(\d{2})\s*-\s*\d{1,2}:\d{2}\s*([AP]M)?/i.exec(s.timedesc||"");
+      if(d&&t){ let h=(+t[1])%12; if((t[3]||"PM").toUpperCase()==="PM") h+=12; k=d+" "+String(h).padStart(2,"0")+":"+t[2]; }
+      else k = d || (s.classId||"default");
+    }
     if(!groups.has(k)) groups.set(k,[]);
     groups.get(k).push(s);
   }
@@ -1172,7 +1178,8 @@ function renderSessions(){
     `</tbody></table>`;
   area.appendChild(tbl);
   const btns=document.createElement("div"); btns.className="row"; btns.style.marginTop="16px";
-  btns.innerHTML=`<button class="btn primary" id="printStk">打印座位贴</button>
+  btns.innerHTML=`<button class="btn primary" id="printStk">打印座位贴（本场）</button>
+    ${state.sessions.length>1?'<button class="btn primary" id="printStkAll">打印全部场次座位贴</button>':""}
     <button class="btn primary" id="printSgn">打印签到表</button>
     <button class="btn" id="printCards">打印答题卡（每生预涂学号）</button>
     <button class="btn" id="printRcp">打印全部回执单</button>
@@ -1181,6 +1188,8 @@ function renderSessions(){
     <button class="btn" id="dlPreHtml">下载打印版（HTML）</button>`;
   area.appendChild(btns);
   $("#printStk").addEventListener("click",()=>printHtml(buildStickers(sess)));
+  const stkAll=$("#printStkAll");
+  if(stkAll) stkAll.addEventListener("click",()=>printHtml(state.sessions.map(buildStickers).join("")));
   $("#printSgn").addEventListener("click",()=>printHtml(buildSignin(sess)));
   $("#printCards").addEventListener("click",()=>printHtml(buildAllCards(sess)));
   $("#printRcp").addEventListener("click",()=>printHtml(buildReceipts(sess)));
@@ -1320,7 +1329,7 @@ function renderSlipList(){
 /* ============================================================ print/html builders */
 function buildStickers(sess){
   const cell = st => st
-    ? `<td class="stkc"><div class="l1">Student ID:</div><div class="l2">${esc(st.id)}</div><div class="l3">${esc(st.name)}</div><div class="l4">${esc(st.seat)}</div></td>`
+    ? `<td class="stkc"><div class="l1">${esc(sess.label)}</div><div class="l2">ID: ${esc(st.id)}</div><div class="l3">${esc(st.name)}</div><div class="l4">${esc(st.seat)}</div></td>`
     : `<td class="stkc"></td>`;
   return sess.rooms.map(room=>{
     const pages=[];

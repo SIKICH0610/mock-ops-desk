@@ -382,22 +382,26 @@ table.ui tr:hover td{background:var(--panel2)}
 
     <div class="card">
       <h2>② 考场与人数</h2>
-      <p class="hint">报名表里自带教室（如「教室名称」列）时，默认<b>直接按报名的教室和时间</b>分场分座（每个报名班一间教室，座位按报名顺序编号）；没有教室信息、或切换成「自动分座」时，才按下面的教室列表按顺序装人（「人数」留空 = 用默认人数）。</p>
-      <div class="row">
-        <div class="field"><label for="roomMode">分配方式</label>
-          <select id="roomMode" style="width:250px">
-            <option value="reg">按报名教室 / 时间（推荐）</option>
-            <option value="auto">按下方教室列表自动分座</option>
-          </select></div>
-        <div class="field"><label for="defCap">默认每场人数（自动分座用）</label>
-          <input type="number" id="defCap" min="1" style="width:110px"></div>
-      </div>
-      <div class="tblwrap"><table class="ui rooms" id="roomTable">
-        <thead><tr><th>教室</th><th>人数（留空=默认）</th><th>实际分到</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table></div>
-      <button class="btn small" id="addRoom" style="margin-top:10px">＋ 加教室</button>
+      <p class="hint">报名表里自带教室（如「教室名称」列）时，<b>自动按报名的教室和时间</b>分场分座，这里什么都不用设置；每场的分配结果显示在下面。</p>
       <div id="roomNotes"></div>
+      <details class="map" id="roomSetup">
+        <summary>分配方式与教室列表（按报名教室分配时不用动；没有教室信息才需要设置）</summary>
+        <p class="hint" style="margin-top:10px">没有教室信息、或切换成「自动分座」时，按下面的教室列表按顺序装人（「人数」留空 = 用默认人数）。</p>
+        <div class="row">
+          <div class="field"><label for="roomMode">分配方式</label>
+            <select id="roomMode" style="width:250px">
+              <option value="reg">按报名教室 / 时间（推荐）</option>
+              <option value="auto">按下方教室列表自动分座</option>
+            </select></div>
+          <div class="field"><label for="defCap">默认每场人数（自动分座用）</label>
+            <input type="number" id="defCap" min="1" style="width:110px"></div>
+        </div>
+        <div class="tblwrap"><table class="ui rooms" id="roomTable">
+          <thead><tr><th>教室</th><th>人数（留空=默认）</th><th>实际分到</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+        <button class="btn small" id="addRoom" style="margin-top:10px">＋ 加教室</button>
+      </details>
     </div>
 
     <div class="card">
@@ -718,6 +722,7 @@ function refreshSetupUI(){
   $("#preset").value = cfg.preset||"custom";
   $("#defCap").value = cfg.defCap;
   $("#roomMode").value = cfg.roomMode||"reg";
+  syncRoomDetails();
   $("#keyCount").textContent = keyLetters().length;
   if(window.__bcState) window.__bcState();
   renderCutoffs();
@@ -1920,7 +1925,8 @@ $$(".tabs button").forEach(b=>b.addEventListener("click",()=>{
 }));
 initSetup();
 $("#defCap").addEventListener("input",()=>{ cfg.defCap=+$("#defCap").value||20; saveCfg(); rebuildSessions(); renderRooms(); renderSessions(); });
-$("#roomMode").addEventListener("change",()=>{ cfg.roomMode=$("#roomMode").value; saveCfg(); rebuildSessions(); renderRooms(); renderSessions(); });
+$("#roomMode").addEventListener("change",()=>{ cfg.roomMode=$("#roomMode").value; syncRoomDetails(); saveCfg(); rebuildSessions(); renderRooms(); renderSessions(); });
+function syncRoomDetails(){ $("#roomSetup").open = (cfg.roomMode||"reg")==="auto"; }
 $("#addRoom").addEventListener("click",()=>{ cfg.rooms.push({name:"",cap:""}); saveCfg(); renderRooms(); });
 $("#slipSearch").addEventListener("input",renderSlipList);
 $("#sendSlips").addEventListener("click", batchSlips);

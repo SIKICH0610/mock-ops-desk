@@ -382,9 +382,14 @@ table.ui tr:hover td{background:var(--panel2)}
 
     <div class="card">
       <h2>② 考场与人数</h2>
-      <p class="hint">按顺序往教室里装人。「人数」留空 = 用默认人数；想单独控制哪间就填哪间。</p>
+      <p class="hint">报名表里自带教室（如「教室名称」列）时，默认<b>直接按报名的教室和时间</b>分场分座（每个报名班一间教室，座位按报名顺序编号）；没有教室信息、或切换成「自动分座」时，才按下面的教室列表按顺序装人（「人数」留空 = 用默认人数）。</p>
       <div class="row">
-        <div class="field"><label for="defCap">默认每场人数</label>
+        <div class="field"><label for="roomMode">分配方式</label>
+          <select id="roomMode" style="width:250px">
+            <option value="reg">按报名教室 / 时间（推荐）</option>
+            <option value="auto">按下方教室列表自动分座</option>
+          </select></div>
+        <div class="field"><label for="defCap">默认每场人数（自动分座用）</label>
           <input type="number" id="defCap" min="1" style="width:110px"></div>
       </div>
       <div class="tblwrap"><table class="ui rooms" id="roomTable">
@@ -683,6 +688,7 @@ const DEFAULT_CFG = {
   bccSubject:"{exam} - Notice",
   bccBody:"",
   defCap:20,
+  roomMode:"reg",
   rooms:[{name:"101",cap:""},{name:"103",cap:""},{name:"104",cap:""},{name:"105",cap:""},{name:"106",cap:""},{name:"204",cap:""}],
 };
 let cfg = JSON.parse(JSON.stringify(DEFAULT_CFG));   // 实际内容由当前考试档案决定
@@ -711,6 +717,7 @@ function refreshSetupUI(){
   $("#binWidth").value = cfg.binWidth||"auto";
   $("#preset").value = cfg.preset||"custom";
   $("#defCap").value = cfg.defCap;
+  $("#roomMode").value = cfg.roomMode||"reg";
   $("#keyCount").textContent = keyLetters().length;
   if(window.__bcState) window.__bcState();
   renderCutoffs();
@@ -803,6 +810,8 @@ const ROSTER_FIELDS = {
   grade:     {label:"年级", aliases:["gradename","年级"]},
   lesson:    {label:"首节课次（取日期）", aliases:["首节课次","首节课","firstlesson"]},
   timedesc:  {label:"上课时间描述", aliases:["classtimedescription","上课时间","classtime"]},
+  room:      {label:"报名教室", aliases:["教室名称","classroom","教室","roomname"]},
+  flt:       {label:"首节课时间（分场用）", aliases:["firstlessontime","首节课时间"]},
 };
 function mapHeaders(header, fields, sampleRows){
   const norm = header.map(normHeader);
@@ -890,6 +899,7 @@ function rebuildStudents(){
         card, mail:get(row,"mail"), classId:get(row,"classid")||"default",
         className:get(row,"classname"), teacher:get(row,"teacher"), grade:get(row,"grade"),
         lesson:get(row,"lesson"), timedesc:get(row,"timedesc"),
+        regRoom:get(row,"room"), flt:get(row,"flt"),
       });
     }
   }
@@ -916,23 +926,43 @@ function deriveTimes(stus){
   }
   return t;
 }
+function shortRoom(r){   // "Classroom 102" → "102"；没有数字就用原文
+  r=String(r||"").trim(); if(!r) return "";
+  const m=/(\d+[A-Za-z]?)\s*$/.exec(r); return m? m[1] : r;
+}
 function rebuildSessions(){
-  const groups=new Map();  // 按考试日期分组（取自首节课次），没有日期再按 classId
+  const groups=new Map();  // 分场：优先按报名的「首节课时间」（日期+时刻），其次首节课次日期，再次 classId
   for(const s of state.students){
-    const m=/(\d{4}-\d{2}-\d{2})/.exec(s.lesson||"");
-    const k = m? m[1] : (s.classId||"default");
+    let k=String(s.flt||"").trim();
+    if(!k){ const m=/(\d{4}-\d{2}-\d{2})/.exec(s.lesson||""); k = m? m[1] : (s.classId||"default"); }
     if(!groups.has(k)) groups.set(k,[]);
     groups.get(k).push(s);
   }
   const keepTimes = Object.assign({}, state.timesOverride);
   state.sessions.forEach(ss=>keepTimes[ss.classId]=ss.times);
   state.sessions=[...groups.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([cid,stus])=>{
-    const rooms = cfg.rooms.map(r=>({name:String(r.name||"").trim(), cap: r.cap===""||r.cap==null ? +cfg.defCap||20 : +r.cap, students:[]})).filter(r=>r.name);
-    let i=0;
-    for(const room of rooms){ for(let seat=1;seat<=room.cap && i<stus.length;seat++){ const st=stus[i++];
-        st.room=room.name; st.seat=room.name+"-"+String(seat).padStart(2,"0"); room.students.push(st); } }
-    const overflow = stus.length - i;
-    return {classId:cid, label:/^\d{4}-/.test(cid)? cid : (sessionLabelOf(stus)||("场次"+cid)), students:stus,
+    let rooms, overflow=0, regMode=false;
+    if((cfg.roomMode||"reg")==="reg" && stus.some(s=>String(s.regRoom||"").trim())){
+      // 按报名表自带的教室分配，座位按报名顺序编号
+      regMode=true;
+      const rmap=new Map();
+      for(const st of stus){
+        const rn=shortRoom(st.regRoom)||"未指定";
+        if(!rmap.has(rn)) rmap.set(rn,{name:rn, cap:0, students:[]});
+        const room=rmap.get(rn);
+        st.room=rn; st.seat=rn+"-"+String(room.students.length+1).padStart(2,"0");
+        room.students.push(st); room.cap=room.students.length;
+      }
+      rooms=[...rmap.values()];
+    } else {
+      rooms = cfg.rooms.map(r=>({name:String(r.name||"").trim(), cap: r.cap===""||r.cap==null ? +cfg.defCap||20 : +r.cap, students:[]})).filter(r=>r.name);
+      let i=0;
+      for(const room of rooms){ for(let seat=1;seat<=room.cap && i<stus.length;seat++){ const st=stus[i++];
+          st.room=room.name; st.seat=room.name+"-"+String(seat).padStart(2,"0"); room.students.push(st); } }
+      overflow = stus.length - i;
+    }
+    return {classId:cid, regMode,
+            label:/^\d{4}-/.test(cid)? cid : (sessionLabelOf(stus)||("场次"+cid)), students:stus,
             rooms:rooms.filter(r=>r.students.length), overflow,
             times: keepTimes[cid] || deriveTimes(stus)};
   });
@@ -1072,6 +1102,7 @@ function renderMapping(){
 }
 function renderRooms(){
   $("#defCap").value=cfg.defCap;
+  $("#roomMode").value=cfg.roomMode||"reg";
   const tb=$("#roomTable tbody"); tb.innerHTML="";
   const sess=state.sessions[state.activeSession];
   cfg.rooms.forEach((r,i)=>{
@@ -1089,6 +1120,17 @@ function renderRooms(){
   });
   const notes=$("#roomNotes"); notes.innerHTML="";
   for(const sess2 of state.sessions){
+    if(sess2.regMode){
+      const n=document.createElement("div"); n.className="note ok";
+      n.textContent="✓ 场次 "+sess2.label+"：按报名教室分配 — "+sess2.rooms.map(r=>r.name+"（"+r.students.length+"人）").join("、")+"（此模式下不使用上面的教室列表）。";
+      notes.appendChild(n);
+      const miss=sess2.rooms.find(r=>r.name==="未指定");
+      if(miss){
+        const w=document.createElement("div"); w.className="note warn";
+        w.textContent="⚠ 场次 "+sess2.label+"：有 "+miss.students.length+" 名学生报名表里没有教室，归入「未指定」— 请检查报名表或改用自动分座。";
+        notes.appendChild(w);
+      }
+    }
     if(sess2.overflow>0){
       const n=document.createElement("div"); n.className="note warn";
       n.textContent="⚠ 场次 "+sess2.label+"：还有 "+sess2.overflow+" 名学生没有座位 —— 请加教室或调大人数。";
@@ -1291,7 +1333,7 @@ function buildStickers(sess){
         if(!grp[r] && !grp[r+10]) break;
         rows += `<tr>${cell(grp[r])}${cell(grp[r+10])}</tr>`;
       }
-      return `<div class="p-room"><p class="p-roomtitle">${esc(cfg.examName)} — 教室 ${esc(room.name)}（${room.students.length}人${pages.length>1?"·第"+(pi+1)+"页":""}）</p>
+      return `<div class="p-room"><p class="p-roomtitle">${esc(cfg.examName)} — ${esc(sess.label)} — 教室 ${esc(room.name)}（${room.students.length}人${pages.length>1?"·第"+(pi+1)+"页":""}）</p>
         <table class="stk"><tr><th>${labL}</th><th>${labR}</th></tr>${rows}</table></div>`;
     }).join("");
   }).join("");
@@ -1869,6 +1911,7 @@ $$(".tabs button").forEach(b=>b.addEventListener("click",()=>{
 }));
 initSetup();
 $("#defCap").addEventListener("input",()=>{ cfg.defCap=+$("#defCap").value||20; saveCfg(); rebuildSessions(); renderRooms(); renderSessions(); });
+$("#roomMode").addEventListener("change",()=>{ cfg.roomMode=$("#roomMode").value; saveCfg(); rebuildSessions(); renderRooms(); renderSessions(); });
 $("#addRoom").addEventListener("click",()=>{ cfg.rooms.push({name:"",cap:""}); saveCfg(); renderRooms(); });
 $("#slipSearch").addEventListener("input",renderSlipList);
 $("#sendSlips").addEventListener("click", batchSlips);

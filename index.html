@@ -1600,10 +1600,18 @@ async function mailSend(to, subject, html, inlinePngB64, bcc){
 
 /* ---- Outlook / Microsoft Graph ---- */
 const MS_SCOPES=["Mail.Send","User.Read"];
-function loadMsal(){ if(window.msal && msal.PublicClientApplication) return Promise.resolve(true);
-  return new Promise(res=>{ const s=document.createElement("script");
-    s.src="https://alcdn.msauth.net/browser/3.10.0/js/msal-browser.min.js";
-    s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); });
+const MSAL_SRCS=[   // 微软自 MSAL v3 起不再提供官方 CDN，用公共 CDN + 后备
+  "https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.10.0/lib/msal-browser.min.js",
+  "https://unpkg.com/@azure/msal-browser@3.10.0/lib/msal-browser.min.js",
+];
+function loadScriptOnce(src){ return new Promise(res=>{ const s=document.createElement("script");
+  s.src=src; s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); }); }
+async function loadMsal(){
+  if(window.msal && msal.PublicClientApplication) return true;
+  for(const src of MSAL_SRCS){
+    if(await loadScriptOnce(src) && window.msal && msal.PublicClientApplication) return true;
+  }
+  return false;
 }
 function renderMsState(){
   $("#msState").textContent = ms.token? ("已连接："+(ms.email||"Outlook")) : "未连接";
@@ -1613,7 +1621,7 @@ async function msAuth(){
   const cid=$("#msCID").value.trim();
   if(!cid){ toast("先按上方说明注册应用并填入 Client ID"); return; }
   try{ localStorage.setItem("mockOpsMsCID", cid); }catch(e){}
-  if(!await loadMsal()){ toast("无法加载 Microsoft 登录组件 — 请在公网版链接里使用此功能"); return; }
+  if(!await loadMsal()){ toast("无法加载 Microsoft 登录组件 — 请检查网络后重试（公司网络拦截 CDN 时请换网络）"); return; }
   try{
     if(!ms.app){
       ms.app=new msal.PublicClientApplication({auth:{clientId:cid,

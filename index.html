@@ -340,10 +340,12 @@ table.ui tr:hover td{background:var(--panel2)}
       <h2>邮件发送（Outlook / Gmail 授权）</h2>
       <p class="hint">连接公司或个人邮箱后，可在「考前」一键群发回执单、「考后」一键群发查分条（逐个学生单独成信），以及「考前 ⑥」一封信 BCC 直接发送。授权都在 Microsoft / Google 官方弹窗里完成，本工具碰不到你的密码；授权只在当前页面会话有效。两边都连接时，用<b>最后连接</b>的那个发送。</p>
 
-      <p class="hint" style="margin-top:4px"><b>Outlook / Microsoft 365（公司邮箱）</b> — 首次使用需一次性注册应用（全公司配一次即可）：打开 portal.azure.com → 「Microsoft Entra ID → App registrations → New registration」→ 名称随意，账户类型选「本组织目录」→ Redirect URI 类型选 <b>Single-page application (SPA)</b>、地址填 <span class="mono">https://sikich0610.github.io</span> → 创建后把「Application (client) ID」粘到下面；再到「API permissions → Add a permission → Microsoft Graph → Delegated」勾选 <span class="mono">Mail.Send</span>。若公司限制了用户自行同意，请 IT 管理员在该页点一次「Grant admin consent」。</p>
+      <p class="hint" style="margin-top:4px"><b>Outlook / Microsoft 365（公司邮箱）</b> — 首次使用需一次性注册应用（全公司配一次即可）：打开 portal.azure.com → 「Microsoft Entra ID → App registrations → New registration」→ 名称随意，账户类型选「本组织目录」→ Redirect URI 类型选 <b>Single-page application (SPA)</b>、地址填 <span class="mono">https://sikich0610.github.io</span> → 创建后把概述页的「Application (client) ID」和「目录 (tenant) ID」都粘到下面；再到「API permissions → Add a permission → Microsoft Graph → Delegated」勾选 <span class="mono">Mail.Send</span>。若公司限制了用户自行同意，请 IT 管理员在该页点一次「Grant admin consent」。</p>
       <div class="row" style="align-items:flex-end">
-        <div class="field" style="flex:1;min-width:300px"><label for="msCID">Microsoft Application (client) ID</label>
+        <div class="field" style="flex:1;min-width:280px"><label for="msCID">Application (client) ID</label>
           <input type="text" id="msCID" class="mono" placeholder="例：11111111-2222-3333-4444-555555555555"></div>
+        <div class="field" style="flex:1;min-width:240px"><label for="msTenant">目录 (tenant) ID 或域名 <span class="fh">— 单租户应用必填，概述页 Client ID 旁边就是</span></label>
+          <input type="text" id="msTenant" class="mono" placeholder="例：thethinkacademy.com"></div>
         <button class="btn primary" id="msAuthBtn">授权 / 登录 Outlook</button>
         <span class="chip" id="msState">未连接</span>
         <button class="btn small" id="msSignout" style="display:none">断开</button>
@@ -1620,13 +1622,16 @@ function renderMsState(){
 async function msAuth(){
   const cid=$("#msCID").value.trim();
   if(!cid){ toast("先按上方说明注册应用并填入 Client ID"); return; }
-  try{ localStorage.setItem("mockOpsMsCID", cid); }catch(e){}
+  const tenant=$("#msTenant").value.trim()||"common";   // 单租户应用必须用租户专属端点（AADSTS50194）
+  try{ localStorage.setItem("mockOpsMsCID", cid); localStorage.setItem("mockOpsMsTenant", $("#msTenant").value.trim()); }catch(e){}
   if(!await loadMsal()){ toast("无法加载 Microsoft 登录组件 — 请检查网络后重试（公司网络拦截 CDN 时请换网络）"); return; }
   try{
-    if(!ms.app){
+    const cfgKey=cid+"|"+tenant;
+    if(!ms.app || ms.cfgKey!==cfgKey){
       ms.app=new msal.PublicClientApplication({auth:{clientId:cid,
-        authority:"https://login.microsoftonline.com/common", redirectUri: location.origin}});
+        authority:"https://login.microsoftonline.com/"+encodeURIComponent(tenant), redirectUri: location.origin}});
       await ms.app.initialize();
+      ms.cfgKey=cfgKey; ms.account=null;
     }
     const r=await ms.app.loginPopup({scopes:MS_SCOPES, prompt:"select_account"});
     ms.account=r.account; ms.token=r.accessToken; ms.email=(r.account&&r.account.username)||"";
@@ -1952,7 +1957,7 @@ $("#msSignout").addEventListener("click", ()=>{
   if(mailProvider==="ms") mailProvider = gmail.token? "gmail" : null;
   renderMsState(); toast("已断开 Outlook");
 });
-try{ $("#msCID").value = localStorage.getItem("mockOpsMsCID")||""; }catch(e){}
+try{ $("#msCID").value = localStorage.getItem("mockOpsMsCID")||""; $("#msTenant").value = localStorage.getItem("mockOpsMsTenant")||""; }catch(e){}
 $("#sendStop").addEventListener("click", ()=>{ batchAbort=true; });
 $("#sendCloseBtn").addEventListener("click", ()=>{
   if(batchRunning){ if(!confirm("正在发送中，关闭将停止剩余发送。确定？")) return; batchAbort=true; }

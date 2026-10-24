@@ -198,17 +198,17 @@ table.ui tr:hover td{background:var(--panel2)}
   .p-card .cardtitle{text-align:center;font-size:14.5pt;font-weight:400;margin:0.02in 0 0;font-family:Calibri,Arial,sans-serif}
   .p-card .barcode{display:block;height:0.44in;margin:0.18in 0 0 0.38in}
   .p-card .barcode img{height:100%;display:block}
-  .p-card .barcode-bottom{position:absolute;bottom:0.04in;left:50%;transform:translateX(-50%);margin:0}
+  .p-card .barcode-bottom{position:absolute;bottom:0;left:50%;transform:translateX(-50%);margin:0}
   .p-card .barcode-ph{width:3.6in;height:0.44in;border:1.5px dashed #999;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#888}
   .p-card .cardinfo{font-size:12.5pt;margin:0.16in 0 0 0.38in;line-height:1.5;white-space:pre-wrap;font-family:Calibri,Arial,sans-serif}
-  .p-card .cardbox{border:2px solid #000;margin:0.16in 0.12in 0;height:8.45in;position:relative}
+  .p-card .cardbox{border:2px solid #000;margin:0.16in 0.12in 0;height:8.4in;position:relative}
   .p-card .qcol{position:absolute;top:0.16in;bottom:0.16in;display:flex;flex-direction:column;justify-content:space-between}
   .p-card .qrow{display:flex;align-items:center;gap:0.05in}
   .p-card .qnum{width:0.3in;text-align:right;font-size:7pt;color:#222;font-family:Arial;padding-right:0.04in}
   .p-card .bub{width:0.185in;height:0.185in;border:1.3px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7pt;color:#222;font-family:'Times New Roman',serif}
-  .p-card .idgrid{position:absolute;top:0;right:0;border:2.5px solid #000;width:2.0in;height:2.3in;display:flex}
+  .p-card .idgrid{position:absolute;top:0;right:0;border:2.5px solid #000;width:2.0in;height:2.17in;display:flex}
   .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.018in 0;font-family:'Times New Roman',serif}
-  .p-card .idcol span{width:0.165in;height:0.165in;border:1.2px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:6.5pt;color:#222}
+  .p-card .idcol span{width:0.185in;height:0.185in;border:1.3px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7pt;color:#222;flex:none}
   .p-card .idcol+.idcol{border-left:1px solid #000}
   .p-card .idcol span.idfill{background:#000;color:#fff;font-weight:700}
   .p-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px}
@@ -1492,17 +1492,17 @@ const STANDALONE_CSS = `
   .p-card .cardtitle{text-align:center;font-size:14.5pt;font-weight:400;margin:0.02in 0 0;font-family:Calibri,Arial,sans-serif}
   .p-card .barcode{display:block;height:0.44in;margin:0.18in 0 0 0.38in}
   .p-card .barcode img{height:100%;display:block}
-  .p-card .barcode-bottom{position:absolute;bottom:0.04in;left:50%;transform:translateX(-50%);margin:0}
+  .p-card .barcode-bottom{position:absolute;bottom:0;left:50%;transform:translateX(-50%);margin:0}
   .p-card .barcode-ph{width:3.6in;height:0.44in;border:1.5px dashed #999;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#888}
   .p-card .cardinfo{font-size:12.5pt;margin:0.16in 0 0 0.38in;line-height:1.5;white-space:pre-wrap;font-family:Calibri,Arial,sans-serif}
-  .p-card .cardbox{border:2px solid #000;margin:0.16in 0.12in 0;height:8.45in;position:relative}
+  .p-card .cardbox{border:2px solid #000;margin:0.16in 0.12in 0;height:8.4in;position:relative}
   .p-card .qcol{position:absolute;top:0.16in;bottom:0.16in;display:flex;flex-direction:column;justify-content:space-between}
   .p-card .qrow{display:flex;align-items:center;gap:0.05in}
   .p-card .qnum{width:0.3in;text-align:right;font-size:7pt;color:#222;font-family:Arial;padding-right:0.04in}
   .p-card .bub{width:0.185in;height:0.185in;border:1.3px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7pt;color:#222;font-family:'Times New Roman',serif}
-  .p-card .idgrid{position:absolute;top:0;right:0;border:2.5px solid #000;width:2.0in;height:2.3in;display:flex}
+  .p-card .idgrid{position:absolute;top:0;right:0;border:2.5px solid #000;width:2.0in;height:2.17in;display:flex}
   .p-card .idcol{flex:1;display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:0.018in 0;font-family:'Times New Roman',serif}
-  .p-card .idcol span{width:0.165in;height:0.165in;border:1.2px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:6.5pt;color:#222}
+  .p-card .idcol span{width:0.185in;height:0.185in;border:1.3px solid #000;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:7pt;color:#222;flex:none}
   .p-card .idcol+.idcol{border-left:1px solid #000}
   .p-card .idcol span.idfill{background:#000;color:#fff;font-weight:700}
   .p-title{font-size:17px;font-weight:700;text-align:center;margin:0 0 10px}

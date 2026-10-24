@@ -198,7 +198,7 @@ table.ui tr:hover td{background:var(--panel2)}
   .p-card .cardtitle{text-align:center;font-size:14.5pt;font-weight:400;margin:0.02in 0 0;font-family:Calibri,Arial,sans-serif}
   .p-card .barcode{display:block;height:0.44in;margin:0.3in 0 0 0.38in}
   .p-card .barcode img{height:100%;display:block}
-  .p-card .barcode-bottom{position:absolute;bottom:0.09in;left:50%;transform:translateX(-50%);margin:0}
+  .p-card .barcode-bottom{position:absolute;bottom:0.04in;left:50%;transform:translateX(-50%);margin:0}
   .p-card .barcode-ph{width:3.6in;height:0.44in;border:1.5px dashed #999;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#888}
   .p-card .cardinfo{font-size:12.5pt;margin:0.3in 0 0 0.38in;line-height:2.3;white-space:pre-wrap;font-family:Calibri,Arial,sans-serif}
   .p-card .cardbox{border:2px solid #000;margin:0.22in 0.12in 0;height:7.85in;position:relative}
@@ -316,31 +316,9 @@ table.ui tr:hover td{background:var(--panel2)}
     </div>
 
     <div class="card">
-      <h2>小纸条 / 邮件文案</h2>
-      <p class="hint">小纸条从上到下的结构是：<b>Dear 学生名，→ 开头感谢语 → 成绩表格 →（奖线表）→ 逐题明细 → 资料说明行 + 链接 → 补充说明 → 落款</b>。下面每一栏留空就不会出现在小纸条里；填完点「预览小纸条」直接看效果（会自动保存）。</p>
-      <div class="field"><label for="emIntro">开头感谢语 <span class="fh">— 显示在 “Dear 学生名,” 的下一行；写 {exam} 会自动替换成上面的考试名称</span></label>
-        <textarea id="emIntro" rows="2" placeholder="例：Thank you for your participation in 2026 AMC 10 Mock Exam (05/17&19) at Think Academy."></textarea></div>
-      <div class="row" style="margin-top:10px">
-        <div class="field" style="flex:1;min-width:240px"><label for="emBookletLine">资料说明行 <span class="fh">— 一句话说清链接里是什么，显示在逐题明细下面</span></label>
-          <input type="text" id="emBookletLine" placeholder="例：Exam Booklet (Student Version and Answer)"></div>
-        <div class="field" style="flex:1;min-width:240px"><label for="emBookletLink">资料链接 <span class="fh">— Google Drive 等分享链接，显示在说明行下一行</span></label>
-          <input type="text" id="emBookletLink" class="mono" placeholder="例：https://drive.google.com/drive/folders/xxxx"></div>
-      </div>
-      <div class="field" style="margin-top:10px"><label for="emExtra">补充说明 <span class="fh">— 讲评课时间/老师/回放等安排，显示在资料链接后面</span></label>
-        <textarea id="emExtra" rows="2" placeholder="例：A detailed explanation class covering the last 10 problems will be held this Friday (May 22) from 5-7 PM, taught by Teacher Jack Liu. A playback will be available."></textarea></div>
-      <div class="field" style="margin-top:10px"><label for="emSign">落款 <span class="fh">— 小纸条最后的署名，可以换行</span></label>
-        <textarea id="emSign" rows="2" placeholder="例：Thank you,（换行）Think Academy Cupertino AMC"></textarea></div>
-      <div class="row" style="margin-top:14px">
-        <button class="btn primary" id="previewSlip">预览小纸条</button>
-        <button class="btn small" id="resetCfg">恢复默认设置</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>邮件发送（Outlook / Gmail 授权）</h2>
-      <p class="hint">连接公司或个人邮箱后，可在「考前」一键群发回执单、「考后」一键群发查分条（逐个学生单独成信），以及「考前 ⑥」一封信 BCC 直接发送。授权都在 Microsoft / Google 官方弹窗里完成，本工具碰不到你的密码；授权只在当前页面会话有效。两边都连接时，用<b>最后连接</b>的那个发送。</p>
-
-      <p class="hint" style="margin-top:4px"><b>Outlook / Microsoft 365（公司邮箱）</b> — 首次使用需一次性注册应用（全公司配一次即可）：打开 portal.azure.com → 「Microsoft Entra ID → App registrations → New registration」→ 名称随意，账户类型选「本组织目录」→ Redirect URI 类型选 <b>Single-page application (SPA)</b>、地址填 <span class="mono">https://sikich0610.github.io</span> → 创建后把概述页的「Application (client) ID」和「目录 (tenant) ID」都粘到下面；再到「API permissions → Add a permission → Microsoft Graph → Delegated」勾选 <span class="mono">Mail.Send</span>。若公司限制了用户自行同意，请 IT 管理员在该页点一次「Grant admin consent」。</p>
+      <h2>邮件发送（Outlook 授权）</h2>
+      <p class="hint">连接公司 Outlook 后，可在「考前」一键群发回执单、「考后」一键群发查分条（逐个学生单独成信），以及「考前 ⑥」一封信 BCC 直接发送。授权在 Microsoft 官方弹窗里完成，本工具碰不到你的密码；授权只在当前页面会话有效。</p>
+      <p class="hint" style="margin-top:4px"><b>首次使用需一次性注册应用（全公司配一次即可）</b>：打开 portal.azure.com → 「Microsoft Entra ID → App registrations → New registration」→ 名称随意，账户类型选「本组织目录」→ Redirect URI 类型选 <b>Single-page application (SPA)</b>、地址填 <span class="mono">https://sikich0610.github.io</span> → 创建后把概述页的「Application (client) ID」和「目录 (tenant) ID」都粘到下面；再到「API permissions → Add a permission → Microsoft Graph → Delegated」勾选 <span class="mono">Mail.Send</span>。若公司限制了用户自行同意，请 IT 管理员在该页点一次「Grant admin consent」。</p>
       <div class="row" style="align-items:flex-end">
         <div class="field" style="flex:1;min-width:280px"><label for="msCID">Application (client) ID</label>
           <input type="text" id="msCID" class="mono" placeholder="例：11111111-2222-3333-4444-555555555555"></div>
@@ -350,19 +328,8 @@ table.ui tr:hover td{background:var(--panel2)}
         <span class="chip" id="msState">未连接</span>
         <button class="btn small" id="msSignout" style="display:none">断开</button>
       </div>
-
-      <p class="hint" style="margin-top:14px"><b>Gmail</b> — 首次使用需一次性配置 Client ID：打开 console.cloud.google.com → 建项目 → 「OAuth consent screen」选 External 并把自己的邮箱加为 Test user → 「Credentials → Create credentials → OAuth client ID → Web application」，Authorized JavaScript origins 填 <span class="mono">https://sikich0610.github.io</span> → 把生成的 Client ID 粘到下面（只需配一次，之后所有考试通用）。</p>
-      <div class="row" style="align-items:flex-end">
-        <div class="field" style="flex:1;min-width:300px"><label for="gmailCID">Google OAuth Client ID</label>
-          <input type="text" id="gmailCID" class="mono" placeholder="例：1234567890-abc.apps.googleusercontent.com"></div>
-        <button class="btn primary" id="gmailAuthBtn">授权 / 登录 Gmail</button>
-        <span class="chip" id="gmailState">未连接</span>
-        <button class="btn small" id="gmailSignout" style="display:none">断开</button>
-      </div>
-
-      <div class="row" style="margin-top:10px">
-        <div class="field" style="flex:1;min-width:280px"><label for="slipSubject">查分条邮件主题 <span class="fh">— {exam} {name} 会自动替换</span></label>
-          <input type="text" id="slipSubject"></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn small" id="resetCfg">恢复本考试的默认设置</button>
       </div>
     </div>
   </section>
@@ -451,7 +418,7 @@ table.ui tr:hover td{background:var(--panel2)}
 
     <div class="card">
       <h2>⑥ 群发通知（一封信 · 全员密送 BCC）</h2>
-      <p class="hint">把同一封通知发给所有家长：地址全部放在<b>密送（BCC）</b>里，家长之间互相看不到邮箱。「打开 Outlook / Gmail 撰写」<b>不需要任何授权</b>——一键打开已填好密送名单、主题和正文的网页版写信窗口，检查一眼点发送即可（人多时自动分批）；也可以「复制 BCC 名单」粘贴到任何邮箱，或用「考试设置」里已授权的邮箱直接发送（一封信）。写 {exam} 会自动替换成考试名称。</p>
+      <p class="hint">把同一封通知发给所有家长：地址全部放在<b>密送（BCC）</b>里，家长之间互相看不到邮箱。首选「用已授权邮箱直接发送」（先在「考试设置」授权 Outlook，一封信直接发出）；也可以「打开 Outlook / Gmail 撰写」——不需要授权，一键打开已填好密送名单、主题和正文的网页版写信窗口，检查一眼点发送（人多时自动分批）。写 {exam} 会自动替换成考试名称。</p>
       <div class="row">
         <div class="field"><label for="bccScope">发给谁</label>
           <select id="bccScope" style="min-width:190px"><option value="all">全部学生</option></select></div>
@@ -462,10 +429,9 @@ table.ui tr:hover td{background:var(--panel2)}
       <div class="field" style="margin-top:10px"><label for="bccBody">正文 <span class="fh">— 会预填进 Gmail 写信窗口，也可以打开后再改</span></label>
         <textarea id="bccBody" rows="5"></textarea></div>
       <div class="row" style="margin-top:12px">
-        <button class="btn primary" id="bccOutlook">打开 Outlook 撰写（免授权）</button>
+        <button class="btn primary" id="bccSend">用已授权邮箱直接发送</button>
+        <button class="btn" id="bccOutlook">打开 Outlook 撰写（免授权）</button>
         <button class="btn" id="bccCompose">打开 Gmail 撰写（免授权）</button>
-        <button class="btn" id="bccCopy">复制 BCC 名单</button>
-        <button class="btn" id="bccSend">用已授权邮箱直接发送</button>
       </div>
       <div id="bccBatches" class="chips"></div>
     </div>
@@ -486,9 +452,33 @@ table.ui tr:hover td{background:var(--panel2)}
       <div id="scanNotes"></div>
     </div>
 
+    <div class="card">
+      <h2>② 小纸条 / 邮件文案</h2>
+      <p class="hint">小纸条从上到下的结构是：<b>Dear 学生名，→ 开头感谢语 → 成绩表格 →（奖线表）→ 逐题明细 → 资料说明行 + 链接 → 补充说明 → 落款</b>。下面每一栏留空就不会出现在小纸条里；填完点「预览小纸条」直接看效果（记得点上方「保存」）。</p>
+      <div class="field"><label for="emIntro">开头感谢语 <span class="fh">— 显示在 “Dear 学生名,” 的下一行；写 {exam} 会自动替换成考试名称</span></label>
+        <textarea id="emIntro" rows="2" placeholder="例：Thank you for your participation in 2026 AMC 10 Mock Exam (05/17&19) at Think Academy."></textarea></div>
+      <div class="row" style="margin-top:10px">
+        <div class="field" style="flex:1;min-width:240px"><label for="emBookletLine">资料说明行 <span class="fh">— 一句话说清链接里是什么，显示在逐题明细下面</span></label>
+          <input type="text" id="emBookletLine" placeholder="例：Exam Booklet (Student Version and Answer)"></div>
+        <div class="field" style="flex:1;min-width:240px"><label for="emBookletLink">资料链接 <span class="fh">— Google Drive 等分享链接，显示在说明行下一行</span></label>
+          <input type="text" id="emBookletLink" class="mono" placeholder="例：https://drive.google.com/drive/folders/xxxx"></div>
+      </div>
+      <div class="field" style="margin-top:10px"><label for="emExtra">补充说明 <span class="fh">— 讲评课时间/老师/回放等安排，显示在资料链接后面</span></label>
+        <textarea id="emExtra" rows="2" placeholder="例：A detailed explanation class covering the last 10 problems will be held this Friday (May 22) from 5-7 PM, taught by Teacher Jack Liu. A playback will be available."></textarea></div>
+      <div class="field" style="margin-top:10px"><label for="emSign">落款 <span class="fh">— 小纸条最后的署名，可以换行</span></label>
+        <textarea id="emSign" rows="2" placeholder="例：Thank you,（换行）Think Academy Cupertino AMC"></textarea></div>
+      <div class="row" style="margin-top:10px">
+        <div class="field" style="flex:1;min-width:280px"><label for="slipSubject">查分条邮件主题 <span class="fh">— {exam} {name} 会自动替换</span></label>
+          <input type="text" id="slipSubject"></div>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary" id="previewSlip">预览小纸条</button>
+      </div>
+    </div>
+
     <div id="postResult" style="display:none">
       <div class="card">
-        <h2>② 成绩总览</h2>
+        <h2>③ 成绩总览</h2>
         <div class="stats" id="statTiles"></div>
         <div id="distChart"></div>
         <div id="cutoffLine" class="chips" style="margin-top:14px"></div>
@@ -501,7 +491,7 @@ table.ui tr:hover td{background:var(--panel2)}
       </div>
 
       <div class="card">
-        <h2>③ 查分小纸条</h2>
+        <h2>④ 查分小纸条</h2>
         <p class="hint">点「复制」得到带表格的富文本，直接粘贴进 Gmail / Outlook 正文；也可以整套打印。</p>
         <div class="row">
           <button class="btn primary" id="printSlips">打印全部小纸条</button>
@@ -1068,10 +1058,21 @@ function runPost(){
 }
 
 /* ============================================================ RENDER: pre */
+function removeRosterFile(name){
+  state.rosterFiles=state.rosterFiles.filter(f=>f.name!==name);
+  delete state.mappingOverride[name];
+  rebuildStudents(); rebuildSessions(); renderRoster();
+  if(state.scans.ready && state.students.length) runPost(); else hidePost();
+  scheduleSave(); toast("已移除 "+name+"，记得点保存");
+}
 function renderRoster(){
   const tags=$("#rosterTags"); tags.innerHTML="";
   for(const f of state.rosterFiles){
     const t=document.createElement("span"); t.className="filetag"; t.textContent="✓ "+f.name+"（"+f.rows.length+"行）";
+    const x=document.createElement("button"); x.type="button"; x.title="删除此文件"; x.textContent="✕";
+    x.style.cssText="border:0;background:none;color:inherit;cursor:pointer;font-size:13px;padding:0;margin-left:2px";
+    x.addEventListener("click",e=>{ e.stopPropagation(); removeRosterFile(f.name); });
+    t.appendChild(x);
     tags.appendChild(t);
   }
   const notes=$("#rosterNotes"); notes.innerHTML="";
@@ -1222,7 +1223,7 @@ function computeDist(P){
   const binW = cfg.binWidth && cfg.binWidth !== "auto" ? +cfg.binWidth : (full > 60 ? 10 : 5);
   const nBins = Math.ceil(full / binW) || 1;
   const bins = Array.from({length:nBins}, (_,i)=>({lo:i*binW, hi:Math.min((i+1)*binW, full), count:0}));
-  for(const s of P.scored){
+  for(const s of (P.scored||[])){
     let i = Math.floor(s.score / binW); if(i >= nBins) i = nBins-1;
     bins[i].count++;
   }
@@ -1491,7 +1492,7 @@ const STANDALONE_CSS = `
   .p-card .cardtitle{text-align:center;font-size:14.5pt;font-weight:400;margin:0.02in 0 0;font-family:Calibri,Arial,sans-serif}
   .p-card .barcode{display:block;height:0.44in;margin:0.3in 0 0 0.38in}
   .p-card .barcode img{height:100%;display:block}
-  .p-card .barcode-bottom{position:absolute;bottom:0.09in;left:50%;transform:translateX(-50%);margin:0}
+  .p-card .barcode-bottom{position:absolute;bottom:0.04in;left:50%;transform:translateX(-50%);margin:0}
   .p-card .barcode-ph{width:3.6in;height:0.44in;border:1.5px dashed #999;display:flex;align-items:center;justify-content:center;font-size:9pt;color:#888}
   .p-card .cardinfo{font-size:12.5pt;margin:0.3in 0 0 0.38in;line-height:2.3;white-space:pre-wrap;font-family:Calibri,Arial,sans-serif}
   .p-card .cardbox{border:2px solid #000;margin:0.22in 0.12in 0;height:7.85in;position:relative}
@@ -1584,20 +1585,13 @@ function dlMergeCsv(){
   saveFile("邮件合并数据.csv", csv);
 }
 
-/* ============================================================ 邮件发送（Outlook / Gmail） */
-const gmail={token:null, email:"", tokenClient:null};
+/* ============================================================ 邮件发送（Outlook / Microsoft Graph） */
 const ms={token:null, email:"", app:null, account:null};
-let mailProvider=null;   // "ms" | "gmail" — 最后成功连接的那个
-function mailReady(){
-  if(mailProvider==="ms" && ms.token) return "ms";
-  if(mailProvider==="gmail" && gmail.token) return "gmail";
-  return ms.token? "ms" : (gmail.token? "gmail" : null);
-}
-function mailFrom(){ const p=mailReady(); return p==="ms"? (ms.email||"Outlook") : p==="gmail"? (gmail.email||"Gmail") : ""; }
-function mailSelf(){ const p=mailReady(); return p==="ms"? ms.email : p==="gmail"? gmail.email : ""; }
+function mailReady(){ return ms.token? "ms" : null; }
+function mailFrom(){ return ms.token? (ms.email||"Outlook") : ""; }
+function mailSelf(){ return ms.token? ms.email : ""; }
 async function mailSend(to, subject, html, inlinePngB64, bcc){
-  return mailReady()==="ms"? graphSend(to, subject, html, inlinePngB64, bcc)
-                           : gmailSend(to, subject, html, inlinePngB64, bcc);
+  return graphSend(to, subject, html, inlinePngB64, bcc);
 }
 
 /* ---- Outlook / Microsoft Graph ---- */
@@ -1635,7 +1629,6 @@ async function msAuth(){
     }
     const r=await ms.app.loginPopup({scopes:MS_SCOPES, prompt:"select_account"});
     ms.account=r.account; ms.token=r.accessToken; ms.email=(r.account&&r.account.username)||"";
-    mailProvider="ms";
     renderMsState(); toast("已连接 "+(ms.email||"Outlook"));
   }catch(e){ toast("授权失败："+(e.errorMessage||e.message)); }
 }
@@ -1657,86 +1650,6 @@ async function graphSend(to, subject, html, inlinePngB64, bcc){
     body:JSON.stringify({message:msg, saveToSentItems:true})});
   if(!r.ok){ const t=await r.text().catch(()=>""); throw new Error("HTTP "+r.status+"："+t.slice(0,120)); }
   return true;
-}
-
-/* ---- Gmail ---- */
-function loadGis(){ if(window.google && google.accounts) return Promise.resolve(true);
-  return new Promise(res=>{ const s=document.createElement("script");
-    s.src="https://accounts.google.com/gsi/client";
-    s.onload=()=>res(true); s.onerror=()=>res(false); document.head.appendChild(s); });
-}
-function renderGmailState(){
-  $("#gmailState").textContent = gmail.token? ("已连接："+(gmail.email||"Gmail")) : "未连接";
-  $("#gmailSignout").style.display = gmail.token? "":"none";
-}
-async function gmailAuth(){
-  const cid=$("#gmailCID").value.trim();
-  if(!cid){ toast("先按上方说明配置并填入 Client ID"); return; }
-  try{ localStorage.setItem("mockOpsGmailCID", cid); }catch(e){}
-  if(!await loadGis()){ toast("无法加载 Google 登录组件 — 请在公网版链接里使用此功能"); return; }
-  try{
-    gmail.tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: cid,
-      scope: "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email",
-      callback: async resp=>{
-        if(resp.error){ toast("授权失败："+resp.error); return; }
-        gmail.token = resp.access_token;
-        try{ const u = await fetch("https://www.googleapis.com/oauth2/v3/userinfo",
-          {headers:{Authorization:"Bearer "+gmail.token}}).then(r=>r.json());
-          gmail.email = u.email||""; }catch(e){}
-        mailProvider="gmail";
-        renderGmailState(); toast("已连接 "+(gmail.email||"Gmail"));
-      },
-    });
-    gmail.tokenClient.requestAccessToken({prompt: gmail.token? "" : "consent"});
-  }catch(e){ toast("初始化失败："+e.message); }
-}
-function b64u8(str){ return btoa(unescape(encodeURIComponent(str))); }
-function wrap76(s){ return s.replace(/(.{76})/g, "$1\r\n"); }
-function buildMime(to, subject, html, inlinePngB64, bcc){
-  const hdrs=[];
-  if(to) hdrs.push("To: "+to);
-  if(bcc && bcc.length) hdrs.push("Bcc: "+(Array.isArray(bcc)? bcc.join(",\r\n "): bcc));
-  hdrs.push("Subject: =?UTF-8?B?"+b64u8(subject)+"?=", "MIME-Version: 1.0");
-  let raw;
-  if(inlinePngB64){
-    const B="====mockops" + Date.now().toString(36) + "====";
-    raw = [
-      ...hdrs,
-      'Content-Type: multipart/related; boundary="'+B+'"',
-      "",
-      "--"+B,
-      'Content-Type: text/html; charset="UTF-8"',
-      "Content-Transfer-Encoding: base64",
-      "",
-      wrap76(b64u8(html)),
-      "--"+B,
-      "Content-Type: image/png",
-      "Content-Transfer-Encoding: base64",
-      "Content-ID: <distchart>",
-      "Content-Disposition: inline; filename=\"distribution.png\"",
-      "",
-      wrap76(inlinePngB64),
-      "--"+B+"--",
-    ].join("\r\n");
-  } else {
-    raw = [
-      ...hdrs,
-      'Content-Type: text/html; charset="UTF-8"',
-      "Content-Transfer-Encoding: base64",
-      "",
-      b64u8(html),
-    ].join("\r\n");
-  }
-  return b64u8(raw).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
-}
-async function gmailSend(to, subject, html, inlinePngB64, bcc){
-  const r=await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{
-    method:"POST",
-    headers:{Authorization:"Bearer "+gmail.token, "Content-Type":"application/json"},
-    body: JSON.stringify({raw: buildMime(to, subject, html, inlinePngB64, bcc)})});
-  if(!r.ok){ const t=await r.text().catch(()=>""); throw new Error("HTTP "+r.status+"："+t.slice(0,120)); }
-  return r.json();
 }
 let batchAbort=false, batchRunning=false;
 function subjFor(tpl, stu){
@@ -1774,7 +1687,7 @@ async function runBatch(items){
   $("#sendStat").textContent=`完成：成功 ${ok} 封，失败 ${fail} 封${batchAbort?"（已手动停止）":""}`;
 }
 async function batchSlips(){
-  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook 或 Gmail"); return; }
+  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook"); return; }
   const P=state.post; if(!P.ready){ toast("还没有成绩"); return; }
   toast("正在生成每人的分布图…");
   const all=[...P.scored, ...P.absent];
@@ -1792,7 +1705,7 @@ async function batchSlips(){
     (noMail? `；另有 ${noMail} 人报名表里没有邮箱，会跳过`:"")+"。点「开始发送」执行。", items);
 }
 function batchReceipts(sess){
-  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook 或 Gmail"); return; }
+  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook"); return; }
   const items=sess.students.filter(s=>s.mail).map(s=>({stu:s, to:s.mail,
     subject:subjFor(cfg.receiptSubject, s),
     html:`<div style="font-family:Arial,'PingFang SC',sans-serif;font-size:14px;line-height:1.6">${esc(resolveReceipt(cfg.receiptBody, s, sess)).replace(/\n/g,"<br>")}</div>`}));
@@ -1861,14 +1774,8 @@ function openComposeBatches(urlFn, label){
 $("#bccScope").addEventListener("change", updateBccCount);
 $("#bccOutlook").addEventListener("click", ()=>openComposeBatches(outlookComposeUrl, "Outlook"));
 $("#bccCompose").addEventListener("click", ()=>openComposeBatches(bccComposeUrl, "Gmail"));
-$("#bccCopy").addEventListener("click", async ()=>{
-  const {mails}=bccRecipients();
-  if(!mails.length){ toast("没有可用邮箱 — 先上传报名表"); return; }
-  try{ await navigator.clipboard.writeText(mails.join(", ")); toast("已复制 "+mails.length+" 个邮箱，粘贴到邮件的 BCC/密送栏"); }
-  catch(e){ toast("复制失败："+e.message); }
-});
 $("#bccSend").addEventListener("click", async ()=>{
-  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook 或 Gmail"); return; }
+  if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook"); return; }
   const {mails}=bccRecipients();
   if(!mails.length){ toast("没有可用邮箱 — 先上传报名表"); return; }
   const body=bccText(cfg.bccBody);
@@ -1916,7 +1823,11 @@ function reparseScans(){
 function renderScanUI(){
   const sc=state.scans;
   $("#scanTag").innerHTML = sc.fileName?
-    `<span class="filetag">✓ ${esc(sc.fileName)}${sc.ready?"（"+Object.keys(sc.byId).length+" 人）":""}</span>` : "";
+    `<span class="filetag">✓ ${esc(sc.fileName)}${sc.ready?"（"+Object.keys(sc.byId).length+" 人）":""}
+      <button type="button" id="scanDel" title="删除扫卡结果" style="border:0;background:none;color:inherit;cursor:pointer;font-size:13px;padding:0;margin-left:2px">✕</button></span>` : "";
+  const del=$("#scanDel");
+  if(del) del.addEventListener("click",e=>{ e.stopPropagation();
+    state.scansRaw=null; reparseScans(); hidePost(); scheduleSave(); toast("已移除扫卡结果，记得点保存"); });
   $("#scanNotes").innerHTML = (sc.warns||[]).map(w=>`<div class="note warn">⚠ ${esc(w)}</div>`).join("");
 }
 function hidePost(){ $("#postResult").style.display="none"; }
@@ -1943,18 +1854,9 @@ function syncRoomDetails(){ $("#roomSetup").open = (cfg.roomMode||"reg")==="auto
 $("#addRoom").addEventListener("click",()=>{ cfg.rooms.push({name:"",cap:""}); saveCfg(); renderRooms(); });
 $("#slipSearch").addEventListener("input",renderSlipList);
 $("#sendSlips").addEventListener("click", batchSlips);
-$("#gmailAuthBtn").addEventListener("click", gmailAuth);
-$("#gmailSignout").addEventListener("click", ()=>{
-  try{ if(gmail.token && window.google) google.accounts.oauth2.revoke(gmail.token, ()=>{}); }catch(e){}
-  gmail.token=null; gmail.email="";
-  if(mailProvider==="gmail") mailProvider = ms.token? "ms" : null;
-  renderGmailState(); toast("已断开 Gmail");
-});
-try{ $("#gmailCID").value = localStorage.getItem("mockOpsGmailCID")||""; }catch(e){}
 $("#msAuthBtn").addEventListener("click", msAuth);
 $("#msSignout").addEventListener("click", ()=>{
   ms.token=null; ms.email=""; ms.account=null;
-  if(mailProvider==="ms") mailProvider = gmail.token? "gmail" : null;
   renderMsState(); toast("已断开 Outlook");
 });
 try{ $("#msCID").value = localStorage.getItem("mockOpsMsCID")||""; $("#msTenant").value = localStorage.getItem("mockOpsMsTenant")||""; }catch(e){}
@@ -2038,9 +1940,12 @@ function demoPost(){
   const cutoffs=cfg.cutoffs
     .filter(c=>String(c.name||"").trim() && !(c.mode==="manual" && !(+c.manual)))
     .map(c=>({name:c.name, value: c.mode==="manual"? +c.manual : Math.round(full*0.8*2)/2}));
+  const scored=[];   // 演示用分布：120 个围绕中档的伪随机分数，让预览里的直方图有形状
+  for(let i=0;i<120;i++){ const u=((i*73)%97)/97, v=((i*41)%89)/89;
+    scored.push({score: Math.max(0, Math.min(full, Math.round(full*(0.15+0.75*(u+v)/2)*2)/2))}); }
   return {student:{name:"Alex Wang", id:"1234567", absent:false, score:r.total, per:r.per,
                    choices, nc:r.nc, nb:r.nb, nw:r.nw},
-          P:{key, stats:{avg:+(full*0.55).toFixed(2), median:Math.round(full*0.5*2)/2, max:full, count:120}, cutoffs}};
+          P:{key, scored, stats:{avg:+(full*0.55).toFixed(2), median:Math.round(full*0.5*2)/2, max:full, count:120}, cutoffs}};
 }
 $("#previewSlip").addEventListener("click", ()=>{
   let html, note;

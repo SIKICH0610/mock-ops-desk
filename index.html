@@ -927,17 +927,32 @@ function shortRoom(r){   // "Classroom 102" → "102"；没有数字就用原文
   r=String(r||"").trim(); if(!r) return "";
   const m=/(\d+[A-Za-z]?)\s*$/.exec(r); return m? m[1] : r;
 }
+function parseStart24(txt){   // 从 "5:30-6:30 PM PST" / "17:00-18:30" 取开考时刻（24h）
+  const x=/(\d{1,2}):(\d{2})\s*-\s*\d{1,2}:\d{2}\s*([AP]M)?/i.exec(txt||"");
+  if(!x) return "";
+  let h=+x[1]; const ap=x[3]&&x[3].toUpperCase();
+  if(ap==="PM"&&h<12) h+=12;
+  else if(ap==="AM"&&h===12) h=0;
+  else if(!ap&&h<=7) h+=12;   // 没写 AM/PM 的 1~7 点按下午课处理
+  return String(h).padStart(2,"0")+":"+x[2];
+}
+function sessionKeyOf(s){   // 分场键 = 日期 + 开考时刻；两者分别尽力解析，保证同日不同时段分开
+  const flt=String(s.flt||"").trim();
+  let d="", t="";
+  let m=/(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/.exec(flt);
+  if(m) d=m[1]+"-"+String(m[2]).padStart(2,"0")+"-"+String(m[3]).padStart(2,"0");
+  else { m=/(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(flt); if(m) d=m[3]+"-"+String(m[1]).padStart(2,"0")+"-"+String(m[2]).padStart(2,"0"); }
+  const tm=/(\d{1,2}):(\d{2})/.exec(flt);
+  if(tm) t=String(+tm[1]).padStart(2,"0")+":"+tm[2];
+  if(!d){ const lm=/(\d{4}-\d{2}-\d{2})/.exec(s.lesson||""); if(lm) d=lm[1]; }
+  if(!t) t=parseStart24(s.timedesc);
+  if(d&&t) return d+" "+t;
+  return d || (s.classId||"default");
+}
 function rebuildSessions(){
   const groups=new Map();  // 分场：优先按报名的「首节课时间」（日期+时刻），其次首节课次日期，再次 classId
   for(const s of state.students){
-    let k=String(s.flt||"").trim();
-    if(!k){   // 没有首节课时间列时：日期 + 从上课时间描述里解析的开考时刻（24h），保证同日不同时段分开
-      const m=/(\d{4}-\d{2}-\d{2})/.exec(s.lesson||"");
-      const d=m? m[1] : "";
-      const t=/(\d{1,2}):(\d{2})\s*-\s*\d{1,2}:\d{2}\s*([AP]M)?/i.exec(s.timedesc||"");
-      if(d&&t){ let h=(+t[1])%12; if((t[3]||"PM").toUpperCase()==="PM") h+=12; k=d+" "+String(h).padStart(2,"0")+":"+t[2]; }
-      else k = d || (s.classId||"default");
-    }
+    const k=sessionKeyOf(s);
     if(!groups.has(k)) groups.set(k,[]);
     groups.get(k).push(s);
   }

@@ -375,7 +375,7 @@ table.ui tr:hover td{background:var(--panel2)}
 
     <div class="card">
       <h2>③ 回执单（考位通知）</h2>
-      <p class="hint">分完教室后发给家长的通知，内容随便编辑。占位符 <span class="mono">{name} {exam} {room} {seat} {date} {signin} {start} {end} {pickup}</span> 会替换成每个学生的实际考位信息。打印版每页 3 张、带裁切虚线；也可以在下方「生成材料」里群发邮件。</p>
+      <p class="hint">分完教室后发给家长的通知，内容随便编辑。占位符 <span class="mono">{name} {exam} {campus} {room} {seat} {date} {signin} {start} {end} {pickup}</span> 会替换成每个学生的实际考位信息（{campus} = 校区，如 De Anza / Stevens Creek / Los Altos / Virtual）。打印版每页 3 张、带裁切虚线；也可以在下方「生成材料」里群发邮件。</p>
       <div class="row">
         <div class="field" style="flex:1;min-width:280px"><label for="receiptSubject">邮件主题 <span class="fh">— 群发回执单邮件时用</span></label>
           <input type="text" id="receiptSubject"></div>
@@ -675,7 +675,7 @@ const DEFAULT_CFG = {
   emIntro:"Thank you for your participation in {exam} at Think Academy.",
   slipSubject:"{exam} - Results for {name}",
   receiptSubject:"{exam} - Exam Information for {name}",
-  receiptBody:"Dear Parent of {name},\n\nYour child is registered for {exam}. Here is the exam-day information:\n\nClassroom: {room}\nSeat Number: {seat}\nDate: {date}\nCheck-in: {signin}\nExam Time: {start} - {end}\nPick-up: {pickup}\n\nPlease arrive during the check-in window and bring a pencil and eraser. See you there!\n\nThink Academy",
+  receiptBody:"Dear Parent of {name},\n\nYour child is registered for {exam}. Here is the exam-day information:\n\nCampus: {campus}\nClassroom: {room}\nSeat Number: {seat}\nDate: {date}\nCheck-in: {signin}\nExam Time: {start} - {end}\nPick-up: {pickup}\n\nPlease arrive during the check-in window and bring a pencil and eraser. See you there!\n\nThink Academy",
   cardTitle:"", cardSection:"", cardBarcode:"",
   emBookletLine:"Exam Booklet (Student Version and Answer)",
   emBookletLink:"",
@@ -808,6 +808,7 @@ const ROSTER_FIELDS = {
   lesson:    {label:"首节课次（取日期）", aliases:["首节课次","首节课","firstlesson"]},
   timedesc:  {label:"上课时间描述", aliases:["classtimedescription","上课时间","classtime"]},
   room:      {label:"报名教室", aliases:["教室名称","classroom","教室","roomname"]},
+  venue:     {label:"校区 venueName", aliases:["venuename","校区","campus","campusname","校区名称"]},
   flt:       {label:"首节课时间（分场用）", aliases:["firstlessontime","首节课时间"]},
 };
 function mapHeaders(header, fields, sampleRows){
@@ -896,7 +897,7 @@ function rebuildStudents(){
         card, mail:get(row,"mail"), classId:get(row,"classid")||"default",
         className:get(row,"classname"), teacher:get(row,"teacher"), grade:get(row,"grade"),
         lesson:get(row,"lesson"), timedesc:get(row,"timedesc"),
-        regRoom:get(row,"room"), flt:get(row,"flt"),
+        regRoom:get(row,"room"), venue:venueShort(get(row,"venue")), flt:get(row,"flt"),
       });
     }
   }
@@ -927,6 +928,12 @@ function shortRoom(r){   // "Classroom 102" → "102"；没有数字就用原文
   r=String(r||"").trim(); if(!r) return "";
   const m=/(\d+[A-Za-z]?)\s*$/.exec(r); return m? m[1] : r;
 }
+function venueShort(v){   // "Cupertino De Anza Campus" → "De Anza"；"Los Altos Campus" → "Los Altos"
+  v=String(v||"").trim(); if(!v) return "";
+  v=v.replace(/\bcampus\b/ig," ").replace(/^cupertino\s+/i,"").replace(/\s+/g," ").trim();
+  return v;
+}
+function roomLabel(r){ return (r.venue && r.venue!==r.name ? r.venue+" " : "")+r.name; }
 function parseStart24(txt){   // 从 "5:30-6:30 PM PST" / "17:00-18:30" 取开考时刻（24h）
   const x=/(\d{1,2}):(\d{2})\s*-\s*\d{1,2}:\d{2}\s*([AP]M)?/i.exec(txt||"");
   if(!x) return "";
@@ -960,20 +967,22 @@ function rebuildSessions(){
   state.sessions.forEach(ss=>keepTimes[ss.classId]=ss.times);
   state.sessions=[...groups.entries()].sort((a,b)=>a[0]<b[0]?-1:1).map(([cid,stus])=>{
     let rooms, overflow=0, regMode=false;
-    if((cfg.roomMode||"reg")==="reg" && stus.some(s=>String(s.regRoom||"").trim())){
+    if((cfg.roomMode||"reg")==="reg" && stus.some(s=>String(s.regRoom||"").trim() || String(s.venue||"").trim())){
       // 按报名表自带的教室分配，座位按报名顺序编号
       regMode=true;
-      const rmap=new Map();
+      const rmap=new Map();   // 按 校区+教室 分组：不同校区的同号教室不混在一起
       for(const st of stus){
-        const rn=shortRoom(st.regRoom)||"未指定";
-        if(!rmap.has(rn)) rmap.set(rn,{name:rn, cap:0, students:[]});
-        const room=rmap.get(rn);
+        const vn=st.venue||"";
+        const rn=shortRoom(st.regRoom) || vn || "未指定";   // 线上/无教室的学生归到校区名下（如 Virtual）
+        const key=vn+"|"+rn;
+        if(!rmap.has(key)) rmap.set(key,{name:rn, venue:vn, cap:0, students:[]});
+        const room=rmap.get(key);
         st.room=rn; st.seat=rn+"-"+String(room.students.length+1).padStart(2,"0");
         room.students.push(st); room.cap=room.students.length;
       }
       rooms=[...rmap.values()];
     } else {
-      rooms = cfg.rooms.map(r=>({name:String(r.name||"").trim(), cap: r.cap===""||r.cap==null ? +cfg.defCap||20 : +r.cap, students:[]})).filter(r=>r.name);
+      rooms = cfg.rooms.map(r=>({name:String(r.name||"").trim(), venue:"", cap: r.cap===""||r.cap==null ? +cfg.defCap||20 : +r.cap, students:[]})).filter(r=>r.name);
       let i=0;
       for(const room of rooms){ for(let seat=1;seat<=room.cap && i<stus.length;seat++){ const st=stus[i++];
           st.room=room.name; st.seat=room.name+"-"+String(seat).padStart(2,"0"); room.students.push(st); } }
@@ -1151,7 +1160,7 @@ function renderRooms(){
   for(const sess2 of state.sessions){
     if(sess2.regMode){
       const n=document.createElement("div"); n.className="note ok";
-      n.textContent="✓ 场次 "+sess2.label+"：按报名教室分配 — "+sess2.rooms.map(r=>r.name+"（"+r.students.length+"人）").join("、")+"（此模式下不使用上面的教室列表）。";
+      n.textContent="✓ 场次 "+sess2.label+"：按报名教室分配 — "+sess2.rooms.map(r=>roomLabel(r)+"（"+r.students.length+"人）").join("、")+"（此模式下不使用上面的教室列表）。";
       notes.appendChild(n);
       const miss=sess2.rooms.find(r=>r.name==="未指定");
       if(miss){
@@ -1183,9 +1192,13 @@ function renderSessions(){
   tb.innerHTML=`<thead><tr><th>场次（日期 · 时间）</th><th>教室（人数）</th><th>签到</th><th>开考</th><th>结束</th><th>接娃</th></tr></thead>`;
   const tbody=document.createElement("tbody");
   for(const s of state.sessions){
+    const byVenue=new Map();
+    for(const r of s.rooms){ const v=r.venue||""; if(!byVenue.has(v)) byVenue.set(v,[]); byVenue.get(v).push(r); }
+    const roomsCell=[...byVenue.entries()].map(([v,rs])=>
+      (v? "<b>"+esc(v)+"</b>：":"")+rs.map(r=>esc(r.name)+"("+r.students.length+")").join(" ")).join("<br>");
     const tr=document.createElement("tr");
     tr.innerHTML=`<td class="mono">${esc(s.label)}（${s.students.length}人）</td>
-      <td class="mono">${s.rooms.map(r=>esc(r.name)+"("+r.students.length+")").join(" ")}</td>`;
+      <td class="mono" style="font-size:12px">${roomsCell}</td>`;
     [["signin",140],["start",100],["end",100],["pickup",100]].forEach(([k,w])=>{
       const td=document.createElement("td");
       const inp=document.createElement("input"); inp.type="text"; inp.value=s.times[k]; inp.style.width=w+"px";
@@ -1229,8 +1242,8 @@ function renderSessions(){
   }
   const sess=state.sessions[state.activeSession];
   const tbl=document.createElement("div"); tbl.className="tblwrap";
-  tbl.innerHTML=`<table class="ui"><thead><tr><th>教室</th><th class="num">人数</th><th>座位号</th></tr></thead><tbody>`+
-    sess.rooms.map(r=>`<tr><td class="mono">${esc(r.name)}</td><td class="num">${r.students.length}</td>
+  tbl.innerHTML=`<table class="ui"><thead><tr><th>校区</th><th>教室</th><th class="num">人数</th><th>座位号</th></tr></thead><tbody>`+
+    sess.rooms.map(r=>`<tr><td>${esc(r.venue||"—")}</td><td class="mono">${esc(r.name)}</td><td class="num">${r.students.length}</td>
       <td class="mono">${esc(r.students[0].seat)} ~ ${esc(r.students[r.students.length-1].seat)}</td></tr>`).join("")+
     `</tbody></table>`;
   area.appendChild(tbl);
@@ -1396,7 +1409,7 @@ function buildStickers(sess){
         if(!grp[r] && !grp[r+10]) break;
         rows += `<tr>${cell(grp[r])}${cell(grp[r+10])}</tr>`;
       }
-      return `<div class="p-room"><p class="p-roomtitle">${esc(cfg.examName)} — ${esc(sess.label)} — 教室 ${esc(room.name)}（${room.students.length}人${pages.length>1?"·第"+(pi+1)+"页":""}）</p>
+      return `<div class="p-room"><p class="p-roomtitle">${esc(cfg.examName)} — ${esc(sess.label)} — ${room.venue? esc(room.venue)+" · ":""}教室 ${esc(room.name)}（${room.students.length}人${pages.length>1?"·第"+(pi+1)+"页":""}）</p>
         <table class="stk"><tr><th>${labL}</th><th>${labR}</th></tr>${rows}</table></div>`;
     }).join("");
   }).join("");
@@ -1444,7 +1457,7 @@ function buildAllCards(sess){
 
 /* ---------- 回执单 ---------- */
 function resolveReceipt(tpl, stu, sess){
-  const map={ "{name}":stu.name, "{exam}":cfg.examName||"", "{room}":stu.room||"", "{seat}":stu.seat||"",
+  const map={ "{name}":stu.name, "{exam}":cfg.examName||"", "{campus}":stu.venue||"", "{room}":stu.room||"", "{seat}":stu.seat||"",
     "{date}":sess.label||"", "{signin}":sess.times.signin||"", "{start}":sess.times.start||"",
     "{end}":sess.times.end||"", "{pickup}":sess.times.pickup||"" };
   let out=String(tpl||"");
@@ -1463,7 +1476,7 @@ function buildSignin(sess){
   return sess.rooms.map(r=>`<div class="p-room">
     <p class="p-title">${esc(cfg.examName)}</p>
     <table class="p-meta"><tr>
-      <td>教室：<b>${esc(r.name)}</b></td><td>人数：${r.students.length}</td>
+      <td>教室：<b>${esc(roomLabel(r))}</b></td><td>人数：${r.students.length}</td>
       <td>授课老师：${esc(r.students[0].teacher||"—")}</td><td>签到：${esc(t.signin||"—")}</td></tr>
       <tr><td>开考：${esc(t.start||"—")}</td><td>结束：${esc(t.end||"—")}</td><td>接娃：${esc(t.pickup||"—")}</td><td>日期：${esc(sess.label)}</td></tr></table>
     <table class="p-sign"><thead><tr><th style="width:44px">序号</th><th>学员编号</th><th>姓名</th><th>考号</th><th style="width:90px">签到</th><th style="width:90px">备注</th></tr></thead>
@@ -1595,13 +1608,13 @@ function dlRoomXlsxAll(){
   const ov=[["考试",cfg.examName],[]];
   for(const sess of state.sessions){
     ov.push(["场次",sess.label,"签到",sess.times.signin,"开考",sess.times.start,"结束",sess.times.end,"接娃",sess.times.pickup]);
-    ov.push(["教室","人数","座位号范围"]);
-    for(const r of sess.rooms) ov.push([r.name,r.students.length,r.students[0].seat+" ~ "+r.students[r.students.length-1].seat]);
+    ov.push(["校区","教室","人数","座位号范围"]);
+    for(const r of sess.rooms) ov.push([r.venue||"",r.name,r.students.length,r.students[0].seat+" ~ "+r.students[r.students.length-1].seat]);
     ov.push([]);
   }
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ov), "考场总览");
-  const rows=[["场次","学员id","姓名","学员编号","教室","座位号","邮箱"]];
-  for(const sess of state.sessions) for(const s of sess.students) rows.push([sess.label,s.id,s.name,s.card,s.room||"",s.seat||"",s.mail]);
+  const rows=[["场次","学员id","姓名","学员编号","校区","教室","座位号","邮箱"]];
+  for(const sess of state.sessions) for(const s of sess.students) rows.push([sess.label,s.id,s.name,s.card,s.venue||"",s.room||"",s.seat||"",s.mail]);
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "学生分配表");
   saveFile("考场安排_全部场次.xlsx", XLSX.write(wb,{bookType:"xlsx",type:"array"}));
 }
@@ -1609,11 +1622,11 @@ function dlRoomXlsx(sess){
   const wb=XLSX.utils.book_new();
   const ov=[["考试",cfg.examName],["场次",sess.label],
     ["签到",sess.times.signin,"开考",sess.times.start,"结束",sess.times.end,"接娃",sess.times.pickup],[],
-    ["教室","人数","座位号范围"],
-    ...sess.rooms.map(r=>[r.name,r.students.length,r.students[0].seat+" ~ "+r.students[r.students.length-1].seat])];
+    ["校区","教室","人数","座位号范围"],
+    ...sess.rooms.map(r=>[r.venue||"",r.name,r.students.length,r.students[0].seat+" ~ "+r.students[r.students.length-1].seat])];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ov), "考场总览");
-  const rows=[["学员id","姓名","学员编号","教室","座位号","邮箱"],
-    ...sess.students.map(s=>[s.id,s.name,s.card,s.room||"",s.seat||"",s.mail])];
+  const rows=[["学员id","姓名","学员编号","校区","教室","座位号","邮箱"],
+    ...sess.students.map(s=>[s.id,s.name,s.card,s.venue||"",s.room||"",s.seat||"",s.mail])];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "学生分配表");
   saveFile("考场安排_"+sess.label+".xlsx", XLSX.write(wb,{bookType:"xlsx",type:"array"}));
 }

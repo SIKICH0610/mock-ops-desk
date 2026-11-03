@@ -412,7 +412,7 @@ table.ui tr:hover td{background:var(--panel2)}
 
     <div class="card" id="preResult" style="display:none">
       <h2>⑤ 生成材料</h2>
-      <p class="hint">时间自动从报名表推算（开考前30~10分钟签到、结束后5分钟接娃），可以直接改。</p>
+      <p class="hint">同一天不同时间的考试会分成不同场次，每场的时间自动从报名表推算（开考前30~10分钟签到、结束后5分钟接娃），在下表里可直接改；「全部场次一次生成」把一天（或全部）的材料一次出完，群发邮件时每个学生自动用自己场次的时间。</p>
       <div id="sessionArea"></div>
     </div>
 
@@ -1158,6 +1158,50 @@ function renderSessions(){
   if(!state.sessions.length){ wrap.style.display="none"; return; }
   wrap.style.display="";
   area.innerHTML="";
+
+  /* ---- 全部场次时间表（每场一行，可直接改） ---- */
+  const ttl=document.createElement("p"); ttl.className="hint"; ttl.style.margin="0 0 6px";
+  ttl.textContent="每个场次一行：同一天不同时间的场次会分开列出，时间可直接改（改完点上方「保存」）。生成材料和群发邮件都按每场自己的时间自动填写。";
+  area.appendChild(ttl);
+  const ttbl=document.createElement("div"); ttbl.className="tblwrap";
+  const tb=document.createElement("table"); tb.className="ui rooms";
+  tb.innerHTML=`<thead><tr><th>场次（日期 · 时间）</th><th>教室（人数）</th><th>签到</th><th>开考</th><th>结束</th><th>接娃</th></tr></thead>`;
+  const tbody=document.createElement("tbody");
+  for(const s of state.sessions){
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td class="mono">${esc(s.label)}（${s.students.length}人）</td>
+      <td class="mono">${s.rooms.map(r=>esc(r.name)+"("+r.students.length+")").join(" ")}</td>`;
+    [["signin",140],["start",100],["end",100],["pickup",100]].forEach(([k,w])=>{
+      const td=document.createElement("td");
+      const inp=document.createElement("input"); inp.type="text"; inp.value=s.times[k]; inp.style.width=w+"px";
+      inp.addEventListener("input",()=>{ s.times[k]=inp.value; state.timesOverride[s.classId]=s.times; scheduleSave(); });
+      td.appendChild(inp); tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  }
+  tb.appendChild(tbody); ttbl.appendChild(tb); area.appendChild(ttbl);
+
+  /* ---- 全部场次一次生成 ---- */
+  const all=document.createElement("div"); all.className="row"; all.style.marginTop="14px";
+  all.innerHTML=`<span style="font-weight:700;align-self:center">全部场次一次生成：</span>
+    <button class="btn primary" id="allStk">座位贴</button>
+    <button class="btn primary" id="allSgn">签到表</button>
+    <button class="btn" id="allCards">答题卡（预涂学号）</button>
+    <button class="btn" id="allRcp">打印回执单</button>
+    <button class="btn" id="allSendRcp">邮件群发回执单</button>
+    <button class="btn" id="allXlsx">考场安排.xlsx</button>`;
+  area.appendChild(all);
+  $("#allStk").addEventListener("click",()=>printHtml(state.sessions.map(buildStickers).join("")));
+  $("#allSgn").addEventListener("click",()=>printHtml(state.sessions.map(buildSignin).join("")));
+  $("#allCards").addEventListener("click",()=>printHtml(state.sessions.map(buildAllCards).join("")));
+  $("#allRcp").addEventListener("click",()=>printHtml(state.sessions.map(buildReceipts).join("")));
+  $("#allSendRcp").addEventListener("click",()=>batchReceipts(state.sessions,"全部场次"));
+  $("#allXlsx").addEventListener("click",dlRoomXlsxAll);
+
+  /* ---- 单场次 ---- */
+  const divl=document.createElement("p"); divl.className="hint"; divl.style.margin="18px 0 6px";
+  divl.textContent="只生成某一场：先选场次，再点下面的按钮。";
+  area.appendChild(divl);
   if(state.sessions.length>1){
     const bar=document.createElement("div"); bar.className="sessionbar";
     state.sessions.forEach((s,i)=>{
@@ -1169,39 +1213,26 @@ function renderSessions(){
     area.appendChild(bar);
   }
   const sess=state.sessions[state.activeSession];
-  const times=sess.times;
-  const trow=document.createElement("div"); trow.className="row";
-  [["signin","签到时间"],["start","开考"],["end","结束"],["pickup","接娃"]].forEach(([k,lab])=>{
-    const fd=document.createElement("div"); fd.className="field";
-    fd.innerHTML=`<label>${lab}</label>`;
-    const inp=document.createElement("input"); inp.type="text"; inp.value=times[k]; inp.style.width="150px";
-    inp.addEventListener("input",()=>{ times[k]=inp.value; state.timesOverride[sess.classId]=times; scheduleSave(); });
-    fd.appendChild(inp); trow.appendChild(fd);
-  });
-  area.appendChild(trow);
   const tbl=document.createElement("div"); tbl.className="tblwrap";
   tbl.innerHTML=`<table class="ui"><thead><tr><th>教室</th><th class="num">人数</th><th>座位号</th></tr></thead><tbody>`+
     sess.rooms.map(r=>`<tr><td class="mono">${esc(r.name)}</td><td class="num">${r.students.length}</td>
       <td class="mono">${esc(r.students[0].seat)} ~ ${esc(r.students[r.students.length-1].seat)}</td></tr>`).join("")+
     `</tbody></table>`;
   area.appendChild(tbl);
-  const btns=document.createElement("div"); btns.className="row"; btns.style.marginTop="16px";
-  btns.innerHTML=`<button class="btn primary" id="printStk">打印座位贴（本场）</button>
-    ${state.sessions.length>1?'<button class="btn primary" id="printStkAll">打印全部场次座位贴</button>':""}
-    <button class="btn primary" id="printSgn">打印签到表</button>
-    <button class="btn" id="printCards">打印答题卡（每生预涂学号）</button>
-    <button class="btn" id="printRcp">打印全部回执单</button>
-    <button class="btn" id="sendRcp">邮件群发回执单</button>
-    <button class="btn" id="dlRoomX">下载 考场安排.xlsx</button>
+  const btns=document.createElement("div"); btns.className="row"; btns.style.marginTop="12px";
+  btns.innerHTML=`<button class="btn" id="printStk">座位贴（本场）</button>
+    <button class="btn" id="printSgn">签到表（本场）</button>
+    <button class="btn" id="printCards">答题卡（本场）</button>
+    <button class="btn" id="printRcp">打印回执单（本场）</button>
+    <button class="btn" id="sendRcp">邮件群发回执单（本场）</button>
+    <button class="btn" id="dlRoomX">考场安排.xlsx（本场）</button>
     <button class="btn" id="dlPreHtml">下载打印版（HTML）</button>`;
   area.appendChild(btns);
   $("#printStk").addEventListener("click",()=>printHtml(buildStickers(sess)));
-  const stkAll=$("#printStkAll");
-  if(stkAll) stkAll.addEventListener("click",()=>printHtml(state.sessions.map(buildStickers).join("")));
   $("#printSgn").addEventListener("click",()=>printHtml(buildSignin(sess)));
   $("#printCards").addEventListener("click",()=>printHtml(buildAllCards(sess)));
   $("#printRcp").addEventListener("click",()=>printHtml(buildReceipts(sess)));
-  $("#sendRcp").addEventListener("click",()=>batchReceipts(sess));
+  $("#sendRcp").addEventListener("click",()=>batchReceipts([sess], sess.label));
   $("#dlRoomX").addEventListener("click",()=>dlRoomXlsx(sess));
   $("#dlPreHtml").addEventListener("click",()=>saveFile("考前打印_"+sess.label+".html",
       standaloneDoc(cfg.examName+" 考前材料", buildStickers(sess)+'<div style="page-break-after:always"></div>'+buildSignin(sess))));
@@ -1544,6 +1575,21 @@ async function copySlip(s){
 }
 
 /* ============================================================ downloads */
+function dlRoomXlsxAll(){
+  const wb=XLSX.utils.book_new();
+  const ov=[["考试",cfg.examName],[]];
+  for(const sess of state.sessions){
+    ov.push(["场次",sess.label,"签到",sess.times.signin,"开考",sess.times.start,"结束",sess.times.end,"接娃",sess.times.pickup]);
+    ov.push(["教室","人数","座位号范围"]);
+    for(const r of sess.rooms) ov.push([r.name,r.students.length,r.students[0].seat+" ~ "+r.students[r.students.length-1].seat]);
+    ov.push([]);
+  }
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ov), "考场总览");
+  const rows=[["场次","学员id","姓名","学员编号","教室","座位号","邮箱"]];
+  for(const sess of state.sessions) for(const s of sess.students) rows.push([sess.label,s.id,s.name,s.card,s.room||"",s.seat||"",s.mail]);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "学生分配表");
+  saveFile("考场安排_全部场次.xlsx", XLSX.write(wb,{bookType:"xlsx",type:"array"}));
+}
 function dlRoomXlsx(sess){
   const wb=XLSX.utils.book_new();
   const ov=[["考试",cfg.examName],["场次",sess.label],
@@ -1704,14 +1750,20 @@ async function batchSlips(){
     `将从 ${mailFrom()||"你的邮箱"} 向 ${items.length} 名学生的家长邮箱逐一发送查分条（含成绩分布图）`+
     (noMail? `；另有 ${noMail} 人报名表里没有邮箱，会跳过`:"")+"。点「开始发送」执行。", items);
 }
-function batchReceipts(sess){
+function batchReceipts(sessList, label){
   if(!mailReady()){ toast("先到「考试设置 → 邮件发送」授权 Outlook"); return; }
-  const items=sess.students.filter(s=>s.mail).map(s=>({stu:s, to:s.mail,
-    subject:subjFor(cfg.receiptSubject, s),
-    html:`<div style="font-family:Arial,'PingFang SC',sans-serif;font-size:14px;line-height:1.6">${esc(resolveReceipt(cfg.receiptBody, s, sess)).replace(/\n/g,"<br>")}</div>`}));
-  const noMail=sess.students.length-items.length;
-  openSendModal("群发回执单（"+sess.label+"）",
-    `将从 ${mailFrom()||"你的邮箱"} 向本场 ${items.length} 名学生的家长邮箱发送考位回执`+
+  const items=[]; let total=0;
+  for(const sess of sessList){   // 每个学生的 {date}{signin}{start}… 都取自己场次的时间
+    total+=sess.students.length;
+    for(const s of sess.students){
+      if(!s.mail) continue;
+      items.push({stu:s, to:s.mail, subject:subjFor(cfg.receiptSubject, s),
+        html:`<div style="font-family:Arial,'PingFang SC',sans-serif;font-size:14px;line-height:1.6">${esc(resolveReceipt(cfg.receiptBody, s, sess)).replace(/\n/g,"<br>")}</div>`});
+    }
+  }
+  const noMail=total-items.length;
+  openSendModal("群发回执单（"+label+"）",
+    `将从 ${mailFrom()||"你的邮箱"} 向 ${items.length} 名学生的家长邮箱发送考位回执（日期和时间按各自场次自动填写）`+
     (noMail? `；${noMail} 人没有邮箱，会跳过`:"")+"。点「开始发送」执行。", items);
 }
 
